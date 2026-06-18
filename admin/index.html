@@ -5,48 +5,22 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin — Nova Shop</title>
   <link rel="stylesheet" href="../css/style.css">
-  <style>
-    body { margin: 0; font-family: system-ui, sans-serif; background: #f4f7fb; color: #0f172a; min-height: 100vh; }
-    .admin-login { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 2rem; }
-    .login-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 2rem; width: 100%; max-width: 400px; box-shadow: 0 4px 20px rgba(37,99,235,.08); }
-    .login-card h1 { color: #1e40af; margin-bottom: 0.25rem; }
-    .form-group { margin-bottom: 1rem; }
-    .form-group label { display: block; margin-bottom: 0.35rem; font-size: 0.88rem; font-weight: 600; }
-    .form-group input, .form-group textarea { width: 100%; padding: 0.65rem 0.85rem; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.95rem; box-sizing: border-box; }
-    .btn { display: inline-block; padding: 0.65rem 1.2rem; border-radius: 8px; font-weight: 600; cursor: pointer; border: none; font-size: 0.9rem; }
-    .btn-primary { background: #2563eb; color: #fff; }
-    .btn-outline { background: #fff; color: #2563eb; border: 1px solid #2563eb; text-decoration: none; }
-    .admin-panel { padding: 5.5rem 2rem 4rem; max-width: 1100px; margin: 0 auto; }
-    .admin-table { width: 100%; background: #fff; border-collapse: collapse; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0; }
-    .admin-table th, .admin-table td { padding: 0.85rem 1rem; text-align: left; border-bottom: 1px solid #e2e8f0; }
-    .admin-table th { background: #f4f7fb; font-size: 0.78rem; color: #64748b; text-transform: uppercase; }
-    .hidden { display: none !important; }
-    #backend-offline {
-      background: #fffbeb; color: #92400e; border: 1px solid #fcd34d;
-      padding: 0.85rem 1rem; border-radius: 8px; margin: 1rem;
-      font-size: 0.9rem; display: none;
-    }
-  </style>
 </head>
 <body>
-  <div id="backend-offline">
-    ⏳ Le serveur Render démarre (30–60 sec la 1ère fois). Attends un peu puis réessaie de te connecter.
-    <button type="button" id="retry-backend" class="btn btn-outline" style="margin-left:0.5rem;padding:0.35rem 0.75rem">Réessayer</button>
-  </div>
-
   <div id="login-view" class="admin-login">
     <div class="login-card">
+      <span class="logo-icon" style="margin-bottom:1rem">NS</span>
       <h1>Admin Nova Shop</h1>
-      <p style="color:#64748b;margin-bottom:1.25rem">Connexion requise</p>
+      <p style="color:var(--text-muted);margin-bottom:1.25rem">Connexion requise</p>
       <form id="login-form">
         <div class="form-group">
           <label for="password">Mot de passe</label>
-          <input type="password" id="password" required placeholder="Mot de passe admin">
+          <input type="password" id="password" required placeholder="Mot de passe admin" autocomplete="current-password">
         </div>
         <button type="submit" class="btn btn-primary" style="width:100%">Connexion</button>
       </form>
       <p id="login-error" style="color:#dc2626;text-align:center;margin-top:1rem;display:none"></p>
-      <p style="margin-top:1.25rem;font-size:0.82rem;color:#64748b;text-align:center">
+      <p style="margin-top:1.25rem;font-size:0.82rem;color:var(--text-muted);text-align:center">
         PayPal : <strong>paypal.me/NovaShop1733</strong>
       </p>
     </div>
@@ -58,7 +32,7 @@
         <span class="logo-icon">NS</span>
         Nova Shop Admin
       </a>
-      <div style="display:flex;gap:0.75rem;align-items:center">
+      <div style="display:flex;gap:0.6rem;align-items:center">
         <a href="../shop.html" class="btn btn-outline">Boutique</a>
         <button class="btn btn-outline" id="logout-btn">Déconnexion</button>
       </div>
@@ -72,39 +46,79 @@
 
       <div class="admin-tabs">
         <button class="tab-btn active" data-tab="accounts">Comptes</button>
-        <button class="tab-btn" data-tab="settings">PayPal</button>
+        <button class="tab-btn" data-tab="orders">Ventes</button>
+        <button class="tab-btn" data-tab="settings">Réglages</button>
       </div>
 
       <div id="tab-accounts">
-        <table class="admin-table">
-          <thead>
-            <tr>
-              <th>Pseudo</th>
-              <th>Prix</th>
-              <th>Certifié</th>
-              <th>Statut</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody id="accounts-table"></tbody>
-        </table>
+        <div class="admin-table-wrap">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Pseudo</th>
+                <th>Prix</th>
+                <th>Email</th>
+                <th>Certifié</th>
+                <th>Statut</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="accounts-table"></tbody>
+          </table>
+        </div>
+        <p id="accounts-empty" class="admin-empty hidden">Aucun compte. Clique sur « + Ajouter un compte ».</p>
+      </div>
+
+      <div id="tab-orders" class="hidden">
+        <div class="admin-table-wrap">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Compte</th>
+                <th>Montant</th>
+                <th>Statut</th>
+              </tr>
+            </thead>
+            <tbody id="orders-table"></tbody>
+          </table>
+        </div>
+        <p id="orders-empty" class="admin-empty hidden">Aucune vente pour le moment.</p>
       </div>
 
       <div id="tab-settings" class="hidden">
-        <div class="login-card" style="max-width:500px;margin:0">
-          <h2 style="margin-bottom:1.5rem;color:#1e40af">Configuration PayPal</h2>
-          <form id="settings-form">
-            <div class="form-group">
-              <label for="paypal-email">Nom PayPal.me</label>
-              <input type="text" id="paypal-email" placeholder="NovaShop1733" value="NovaShop1733">
-              <p style="font-size:0.8rem;color:#64748b;margin-top:0.35rem">Lien : paypal.me/<span id="paypal-preview">NovaShop1733</span></p>
-            </div>
-            <div class="form-group">
-              <label for="site-name">Nom du site</label>
-              <input type="text" id="site-name" value="Nova Shop">
-            </div>
-            <button type="submit" class="btn btn-primary">Sauvegarder</button>
-          </form>
+        <div class="settings-grid">
+          <div class="login-card" style="margin:0">
+            <h2 style="margin-bottom:1.25rem;color:var(--blue-800)">PayPal & site</h2>
+            <form id="settings-form">
+              <div class="form-group">
+                <label for="paypal-email">Nom PayPal.me</label>
+                <input type="text" id="paypal-email" placeholder="NovaShop1733">
+                <p style="font-size:0.8rem;color:var(--text-muted);margin-top:0.35rem">Lien : paypal.me/<span id="paypal-preview">NovaShop1733</span></p>
+              </div>
+              <div class="form-group">
+                <label for="site-name">Nom du site</label>
+                <input type="text" id="site-name" value="Nova Shop">
+              </div>
+              <div class="form-group">
+                <label for="admin-pass">Mot de passe admin</label>
+                <input type="text" id="admin-pass" placeholder="Mot de passe">
+              </div>
+              <button type="submit" class="btn btn-primary">Sauvegarder</button>
+            </form>
+          </div>
+
+          <div class="login-card" style="margin:0">
+            <h2 style="margin-bottom:0.75rem;color:var(--blue-800)">Sauvegarde du catalogue</h2>
+            <p style="font-size:0.86rem;color:var(--text-muted);margin-bottom:1.25rem">
+              Les comptes sont enregistrés dans ce navigateur. Exporte le fichier pour le sauvegarder ou le publier pour tes clients.
+            </p>
+            <button class="btn btn-outline" id="export-btn" style="width:100%;margin-bottom:0.75rem">Exporter (télécharger)</button>
+            <label class="btn btn-outline" style="width:100%;text-align:center;cursor:pointer">
+              Importer un fichier
+              <input type="file" id="import-input" accept="application/json" hidden>
+            </label>
+          </div>
         </div>
       </div>
     </main>
@@ -120,26 +134,33 @@
         <input type="hidden" id="acc-id">
         <div class="form-group">
           <label for="acc-username">Pseudo Minecraft</label>
-          <input type="text" id="acc-username" required>
+          <input type="text" id="acc-username" required placeholder="Ex : ItzRealMe">
         </div>
         <div class="form-group">
           <label for="acc-price">Prix (€)</label>
-          <input type="number" id="acc-price" step="0.01" min="0" required>
+          <input type="number" id="acc-price" step="0.01" min="0" required placeholder="29.99">
         </div>
         <div class="form-group">
-          <label for="acc-email">Email du compte</label>
-          <input type="email" id="acc-email" required>
+          <label for="acc-email">Email du compte (livré après achat)</label>
+          <input type="email" id="acc-email" required placeholder="compte@mail.com">
         </div>
         <div class="form-group">
-          <label for="acc-password">Mot de passe du compte</label>
-          <input type="text" id="acc-password" required>
+          <label for="acc-password">Mot de passe du compte (livré après achat)</label>
+          <input type="text" id="acc-password" required placeholder="MotDePasse123">
         </div>
         <div class="form-group">
           <label for="acc-description">Description</label>
-          <textarea id="acc-description" rows="3"></textarea>
+          <textarea id="acc-description" rows="3" placeholder="Détails du compte..."></textarea>
         </div>
         <div class="form-group">
-          <label><input type="checkbox" id="acc-certified" checked> Compte certifié</label>
+          <label class="checkbox-row">
+            <input type="checkbox" id="acc-certified" checked> Compte certifié
+          </label>
+        </div>
+        <div class="form-group">
+          <label class="checkbox-row">
+            <input type="checkbox" id="acc-sold"> Marquer comme vendu
+          </label>
         </div>
         <button type="submit" class="btn btn-primary" style="width:100%">Sauvegarder</button>
       </form>
@@ -147,29 +168,5 @@
   </div>
 
   <script type="module" src="../js/admin.js"></script>
-  <script type="module">
-    import { BACKEND_URL } from '../js/config.js';
-
-    async function checkBackend() {
-      const el = document.getElementById('backend-offline');
-      try {
-        const ctrl = new AbortController();
-        setTimeout(() => ctrl.abort(), 12000);
-        const res = await fetch(`${BACKEND_URL}/health`, { signal: ctrl.signal });
-        if (res.ok) {
-          el.style.display = 'none';
-          return true;
-        }
-      } catch { /* serveur en démarrage */ }
-      el.style.display = 'block';
-      return false;
-    }
-
-    checkBackend();
-    document.getElementById('retry-backend')?.addEventListener('click', checkBackend);
-    document.getElementById('paypal-email')?.addEventListener('input', (e) => {
-      document.getElementById('paypal-preview').textContent = e.target.value || 'NovaShop1733';
-    });
-  </script>
 </body>
 </html>

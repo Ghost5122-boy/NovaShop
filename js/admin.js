@@ -1,11 +1,15 @@
 import {
   adminLogin, getAdminToken, setAdminToken,
-  adminGetStore, adminSaveAccount, adminDeleteAccount, adminSaveSettings
+  adminGetStore, adminSaveAccount, adminDeleteAccount, adminSaveSettings,
+  exportStore, importStore
 } from './api.js';
 
 const loginView = document.getElementById('login-view');
 const adminView = document.getElementById('admin-view');
 const accountsTable = document.getElementById('accounts-table');
+const accountsEmpty = document.getElementById('accounts-empty');
+const ordersTable = document.getElementById('orders-table');
+const ordersEmpty = document.getElementById('orders-empty');
 const accountModal = document.getElementById('account-modal');
 let store = null;
 
@@ -25,22 +29,33 @@ async function loadStore() {
   try {
     store = await adminGetStore();
     renderAccounts();
+    renderOrders();
     fillSettings();
   } catch {
     showLogin();
   }
 }
 
+function escapeHtml(str = '') {
+  return String(str).replace(/[&<>"']/g, c =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
 function renderAccounts() {
-  accountsTable.innerHTML = store.accounts.map(acc => `
+  const list = store.accounts || [];
+  accountsEmpty.classList.toggle('hidden', list.length > 0);
+  accountsTable.innerHTML = list.map(acc => `
     <tr>
-      <td><strong>${acc.username}</strong></td>
-      <td style="color:var(--accent);font-weight:700">${acc.price.toFixed(2)} €</td>
+      <td><strong>${escapeHtml(acc.username)}</strong></td>
+      <td class="cell-price">${Number(acc.price).toFixed(2)} €</td>
+      <td class="cell-muted">${escapeHtml(acc.email || '—')}</td>
       <td>${acc.certified ? '✅' : '—'}</td>
-      <td>${acc.sold ? '<span style="color:#ff4757">Vendu</span>' : '<span style="color:var(--accent)">Disponible</span>'}</td>
+      <td>${acc.sold
+        ? '<span class="badge-sold">Vendu</span>'
+        : '<span class="badge-available">Disponible</span>'}</td>
       <td class="action-btns">
         <button class="btn btn-sm btn-outline edit-btn" data-id="${acc.id}">Modifier</button>
-        <button class="btn btn-sm btn-danger delete-btn" data-id="${acc.id}">Supprimer</button>
+        <button class="btn btn-sm btn-danger delete-btn" data-id="${acc.id}">Suppr.</button>
       </td>
     </tr>
   `).join('');
@@ -53,10 +68,27 @@ function renderAccounts() {
   });
 }
 
+function renderOrders() {
+  const paid = (store.orders || []).filter(o => o.paid).reverse();
+  ordersEmpty.classList.toggle('hidden', paid.length > 0);
+  ordersTable.innerHTML = paid.map(o => {
+    const acc = store.accounts.find(a => a.id === o.accountId);
+    const date = o.paidAt ? new Date(o.paidAt).toLocaleString('fr-FR') : '—';
+    return `
+      <tr>
+        <td class="cell-muted">${date}</td>
+        <td>${acc ? escapeHtml(acc.username) : '<span class="cell-muted">compte supprimé</span>'}</td>
+        <td class="cell-price">${o.amount != null ? Number(o.amount).toFixed(2) + ' €' : '—'}</td>
+        <td><span class="badge-available">Payé</span></td>
+      </tr>`;
+  }).join('');
+}
+
 function fillSettings() {
   const me = store.settings.paypalMe || store.settings.paypalEmail || 'NovaShop1733';
   document.getElementById('paypal-email').value = me;
   document.getElementById('site-name').value = store.settings.siteName || 'Nova Shop';
+  document.getElementById('admin-pass').value = store.settings.adminPassword || '';
   const preview = document.getElementById('paypal-preview');
   if (preview) preview.textContent = me;
 }
@@ -66,6 +98,7 @@ function openAddModal() {
   document.getElementById('account-form').reset();
   document.getElementById('acc-id').value = '';
   document.getElementById('acc-certified').checked = true;
+  document.getElementById('acc-sold').checked = false;
   accountModal.classList.add('active');
 }
 
@@ -76,10 +109,11 @@ function openEditModal(id) {
   document.getElementById('acc-id').value = acc.id;
   document.getElementById('acc-username').value = acc.username;
   document.getElementById('acc-price').value = acc.price;
-  document.getElementById('acc-email').value = acc.email;
-  document.getElementById('acc-password').value = acc.password;
+  document.getElementById('acc-email').value = acc.email || '';
+  document.getElementById('acc-password').value = acc.password || '';
   document.getElementById('acc-description').value = acc.description || '';
-  document.getElementById('acc-certified').checked = acc.certified;
+  document.getElementById('acc-certified').checked = !!acc.certified;
+  document.getElementById('acc-sold').checked = !!acc.sold;
   accountModal.classList.add('active');
 }
 
@@ -101,7 +135,7 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
     errorEl.style.display = 'none';
     showAdmin();
   } catch {
-    errorEl.textContent = 'Mot de passe incorrect ou serveur en démarrage — attends 30 sec et réessaie';
+    errorEl.textContent = 'Mot de passe incorrect';
     errorEl.style.display = 'block';
   } finally {
     btn.disabled = false;
@@ -115,6 +149,9 @@ document.getElementById('modal-close').addEventListener('click', () => accountMo
 accountModal.addEventListener('click', (e) => {
   if (e.target === accountModal) accountModal.classList.remove('active');
 });
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') accountModal.classList.remove('active');
+});
 
 document.getElementById('account-form').addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -127,7 +164,7 @@ document.getElementById('account-form').addEventListener('submit', async (e) => 
     password: document.getElementById('acc-password').value,
     description: document.getElementById('acc-description').value.trim(),
     certified: document.getElementById('acc-certified').checked,
-    sold: false
+    sold: document.getElementById('acc-sold').checked
   };
   await adminSaveAccount(account);
   accountModal.classList.remove('active');
@@ -136,21 +173,54 @@ document.getElementById('account-form').addEventListener('submit', async (e) => 
 
 document.getElementById('settings-form').addEventListener('submit', async (e) => {
   e.preventDefault();
+  const pass = document.getElementById('admin-pass').value.trim();
   await adminSaveSettings({
     paypalEmail: document.getElementById('paypal-email').value.trim(),
     paypalMe: document.getElementById('paypal-email').value.trim(),
-    siteName: document.getElementById('site-name').value.trim()
+    siteName: document.getElementById('site-name').value.trim(),
+    ...(pass ? { adminPassword: pass } : {})
   });
-  alert('Paramètres sauvegardés !');
+  alert('Réglages sauvegardés !');
   await loadStore();
+});
+
+document.getElementById('paypal-email').addEventListener('input', (e) => {
+  document.getElementById('paypal-preview').textContent = e.target.value || 'NovaShop1733';
+});
+
+document.getElementById('export-btn').addEventListener('click', () => {
+  const data = exportStore();
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'nova-shop-catalogue.json';
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+document.getElementById('import-input').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  try {
+    const text = await file.text();
+    importStore(JSON.parse(text));
+    alert('Catalogue importé !');
+    await loadStore();
+  } catch (err) {
+    alert('Erreur import : ' + err.message);
+  }
+  e.target.value = '';
 });
 
 document.querySelectorAll('.tab-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
-    document.getElementById('tab-accounts').classList.toggle('hidden', btn.dataset.tab !== 'accounts');
-    document.getElementById('tab-settings').classList.toggle('hidden', btn.dataset.tab !== 'settings');
+    const tab = btn.dataset.tab;
+    document.getElementById('tab-accounts').classList.toggle('hidden', tab !== 'accounts');
+    document.getElementById('tab-orders').classList.toggle('hidden', tab !== 'orders');
+    document.getElementById('tab-settings').classList.toggle('hidden', tab !== 'settings');
   });
 });
 
