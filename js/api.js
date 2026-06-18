@@ -7,7 +7,7 @@ import {
   PAYPAL_CLIENT_ID,
   BACKEND_URL,
   dataUrl
-} from './config.js?v=5';
+} from './config.js?v=6';
 
 const STORE_KEY = 'nova_store_v2';
 const TOKEN_KEY = 'nova_admin_token';
@@ -232,29 +232,21 @@ export async function getCredentials(id, orderToken) {
     return apiFetch(`/api/accounts/${encodeURIComponent(id)}/credentials?token=${encodeURIComponent(orderToken)}`);
   }
 
+  // La preuve n'est créée qu'après une capture PayPal réussie (status COMPLETED).
   const proof = getPaidProof(id);
-  if (!proof || proof.token !== orderToken) {
-    throw new Error('Paiement non confirmé');
-  }
+  const localOrder = loadStore().orders.find(o => o.token === orderToken && o.accountId === id && o.paid);
+  const paid = (proof && proof.token === orderToken) || !!localOrder;
+  if (!paid) throw new Error('Paiement non confirmé');
 
-  const store = loadStore();
-  let order = store.orders.find(o => o.token === orderToken && o.accountId === id);
-  if (!order?.paid) {
-    try {
-      const remote = await fetchStaticStore();
-      order = remote.orders?.find(o => o.token === orderToken && o.accountId === id);
-    } catch { /* ignore */ }
-  }
-  if (!order?.paid) throw new Error('Paiement non confirmé');
-
-  let acc = store.accounts.find(a => a.id === id);
-  if (!acc || !acc.email) {
+  // Identifiants : d'abord le store local, sinon le catalogue déployé (store.json).
+  let acc = loadStore().accounts.find(a => a.id === id && a.email);
+  if (!acc) {
     try {
       const remote = await fetchStaticStore();
       acc = remote.accounts?.find(a => a.id === id);
     } catch { /* ignore */ }
   }
-  if (!acc?.email) throw new Error('Compte introuvable');
+  if (!acc?.email) throw new Error('Identifiants indisponibles. Contacte le vendeur.');
   return { username: acc.username, email: acc.email, password: acc.password };
 }
 

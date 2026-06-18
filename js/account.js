@@ -1,6 +1,5 @@
-import { getAccount, createPayPalOrder, confirmPayment, getPublicSettings } from './api.js?v=5';
-import { PAYPAL_ME } from './config.js?v=5';
-import { fetchPlayerTiers, getSkinUrl, startTierRefresh, tierValueClass, bestManualTier } from './tiers.js?v=5';
+import { getAccount, createPayPalOrder, confirmPayment, getPublicSettings } from './api.js?v=6';
+import { fetchPlayerTiers, getSkinUrl, startTierRefresh, tierValueClass, bestManualTier } from './tiers.js?v=6';
 
 const params = new URLSearchParams(window.location.search);
 const accountId = params.get('id');
@@ -11,15 +10,23 @@ const errorState = document.getElementById('error-state');
 let paypalSdkPromise = null;
 let loadedPayPalClientId = null;
 
+function esc(s) {
+  return String(s ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
 function renderTiersGrid(rankings) {
   if (!rankings?.length) {
     return '<p style="color:var(--text-muted)">Aucun tier actif trouvé sur PvPTiers.</p>';
   }
   return rankings.map(r => `
     <div class="tier-item">
-      <div class="tier-item-mode">${r.label}</div>
-      <div class="tier-item-value ${r.pos === 0 ? 'ht' : 'lt'}">${r.tierStr}</div>
-      ${r.peakTier ? `<div style="font-size:0.7rem;color:var(--text-muted);margin-top:0.2rem">Peak: ${r.peakTier}</div>` : ''}
+      <div class="tier-item-mode">${esc(r.label)}</div>
+      <div class="tier-item-value ${r.pos === 0 ? 'ht' : 'lt'}">${esc(r.tierStr)}</div>
+      ${r.peakTier ? `<div style="font-size:0.7rem;color:var(--text-muted);margin-top:0.2rem">Peak: ${esc(r.peakTier)}</div>` : ''}
     </div>
   `).join('');
 }
@@ -29,12 +36,11 @@ function renderManualGrid(tiers) {
     return '<p style="color:var(--text-muted)">Aucun tier.</p>';
   }
   return tiers.map(t => {
-    const cls = tierValueClass(t.value);
-    const isHt = cls.startsWith('ht');
+    const isHt = tierValueClass(t.value).startsWith('ht');
     return `
     <div class="tier-item">
-      <div class="tier-item-mode">${t.mode}</div>
-      <div class="tier-item-value ${isHt ? 'ht' : 'lt'}">${t.value}</div>
+      <div class="tier-item-mode">${esc(t.mode)}</div>
+      <div class="tier-item-value ${isHt ? 'ht' : 'lt'}">${esc(t.value)}</div>
     </div>`;
   }).join('');
 }
@@ -48,50 +54,42 @@ function loadPayPalSdk(clientId) {
     return Promise.resolve(window.paypal);
   }
   document.querySelectorAll('script[src*="paypal.com/sdk/js"]').forEach(el => el.remove());
-  delete window.paypal;
+  try { delete window.paypal; } catch { window.paypal = undefined; }
   loadedPayPalClientId = clientId;
   paypalSdkPromise = new Promise((resolve, reject) => {
     const s = document.createElement('script');
     s.src = `https://www.paypal.com/sdk/js?client-id=${encodeURIComponent(clientId)}&currency=EUR&intent=capture`;
-    s.onload = () => resolve(window.paypal);
-    s.onerror = () => reject(new Error('SDK PayPal'));
+    s.onload = () => (window.paypal ? resolve(window.paypal) : reject(new Error('SDK PayPal vide')));
+    s.onerror = () => reject(new Error('SDK PayPal non chargé'));
     document.head.appendChild(s);
   });
   return paypalSdkPromise;
 }
 
+function renderPayPalFallback(box, account, settings) {
+  box.innerHTML = `
+    <div class="payment-discord">
+      <div class="payment-discord-top">
+        <span class="payment-paypal-icon">P</span>
+        <div>
+          <strong>Paiement PayPal</strong>
+          <p>Montant : <span class="payment-amount">${account.price.toFixed(2)} €</span></p>
+        </div>
+      </div>
+      <p style="color:var(--text-muted);font-size:0.9rem;margin-bottom:1rem">
+        Envoie <strong>${account.price.toFixed(2)} €</strong> à
+        <strong>paypal.me/${esc(settings.paypalMe)}</strong>, puis contacte le vendeur
+        avec le pseudo <strong>${esc(account.username)}</strong> pour recevoir les identifiants.
+      </p>
+      <a href="https://paypal.me/${encodeURIComponent(settings.paypalMe)}/${account.price.toFixed(2)}"
+         target="_blank" rel="noopener noreferrer" class="btn btn-paypal">Ouvrir PayPal.me</a>
+    </div>`;
+}
+
 async function setupPayment(account) {
   const box = document.getElementById('payment-box');
   if (!box) return;
-  const settings = await getPublicSettings();
 
-  // Pas de Client ID configuré → secours simple (lien PayPal.me), sans faux bouton.
-  if (!settings.paypalClientId) {
-    box.innerHTML = `
-      <div class="payment-discord">
-        <div class="payment-discord-top">
-          <span class="payment-paypal-icon">P</span>
-          <div>
-            <strong>Paiement PayPal</strong>
-            <p>Montant : <span class="payment-amount">${account.price.toFixed(2)} €</span></p>
-          </div>
-        </div>
-        <p style="color:var(--text-muted);font-size:0.9rem;margin-bottom:1rem">
-          Envoie le montant exact à <strong>paypal.me/${settings.paypalMe}</strong>, puis contacte le vendeur
-          avec le pseudo <strong>${account.username}</strong> pour recevoir les identifiants.
-        </p>
-        <a href="https://paypal.me/${settings.paypalMe}/${account.price.toFixed(2)}"
-           target="_blank" rel="noopener noreferrer" class="btn btn-paypal">
-          Ouvrir PayPal.me
-        </a>
-        <p style="font-size:0.78rem;color:var(--text-muted);margin-top:0.75rem;text-align:center">
-          Astuce admin : ajoute ton « Client ID PayPal » dans les Réglages pour le paiement automatique sur le site.
-        </p>
-      </div>`;
-    return;
-  }
-
-  // Paiement intégré : boutons PayPal (popup sur le site, façon Discord).
   box.innerHTML = `
     <div class="payment-discord">
       <div class="payment-discord-top">
@@ -102,32 +100,57 @@ async function setupPayment(account) {
         </div>
       </div>
       <div id="paypal-buttons"></div>
-      <p id="pay-status" class="pay-status"></p>
+      <p id="pay-status" class="pay-status">Chargement du paiement…</p>
     </div>`;
 
   const status = document.getElementById('pay-status');
+  const settings = await getPublicSettings();
+
+  if (!settings.paypalClientId) {
+    renderPayPalFallback(box, account, settings);
+    return;
+  }
+
+  let paypal;
   try {
-    const paypal = await loadPayPalSdk(settings.paypalClientId);
+    paypal = await loadPayPalSdk(settings.paypalClientId);
+  } catch {
+    renderPayPalFallback(box, account, settings);
+    return;
+  }
+
+  status.textContent = '';
+
+  try {
     paypal.Buttons({
       style: { layout: 'vertical', color: 'blue', shape: 'pill', label: 'paypal', height: 48 },
       createOrder: (data, actions) => actions.order.create({
+        intent: 'CAPTURE',
         purchase_units: [{
-          description: `Compte Minecraft ${account.username}`,
+          description: `Compte Minecraft ${account.username}`.slice(0, 127),
           amount: { value: account.price.toFixed(2), currency_code: 'EUR' }
         }]
       }),
       onApprove: async (data, actions) => {
-        status.textContent = 'Validation du paiement...';
-        await actions.order.capture();
-        const order = await createPayPalOrder(account.id);
-        await confirmPayment(order.token);
-        window.location.href = `delivery.html?accountId=${account.id}&token=${order.token}`;
+        status.textContent = 'Validation du paiement…';
+        try {
+          const capture = await actions.order.capture();
+          if (capture?.status !== 'COMPLETED') throw new Error('Paiement non finalisé');
+          const order = await createPayPalOrder(account.id);
+          await confirmPayment(order.token, account.id, data.orderID);
+          window.location.href = `delivery.html?accountId=${encodeURIComponent(account.id)}&token=${encodeURIComponent(order.token)}`;
+        } catch (e) {
+          status.textContent = (e && e.message) || 'Erreur après paiement. Contacte le vendeur.';
+        }
       },
       onCancel: () => { status.textContent = 'Paiement annulé.'; },
-      onError: () => { status.textContent = 'Erreur PayPal. Réessaie ou contacte le vendeur.'; }
-    }).render('#paypal-buttons');
+      onError: (err) => {
+        console.error('PayPal error', err);
+        status.textContent = 'Erreur PayPal. Réessaie ou utilise PayPal.me.';
+      }
+    }).render('#paypal-buttons').catch(() => renderPayPalFallback(box, account, settings));
   } catch {
-    status.textContent = 'Impossible de charger PayPal. Vérifie le Client ID dans les Réglages.';
+    renderPayPalFallback(box, account, settings);
   }
 }
 
@@ -142,14 +165,14 @@ function renderAccount(account, tierData) {
   detailEl.innerHTML = `
     <div class="account-detail-header">
       <div class="account-detail-skin">
-        <img src="${getSkinUrl(account.username)}" alt="${account.username}">
+        <img src="${getSkinUrl(account.username)}" alt="${esc(account.username)}">
       </div>
       ${account.certified ? '<span class="certified-badge">Compte certifié</span>' : ''}
-      <h1 class="account-detail-name">${account.username}</h1>
-      ${mainTier ? `<div class="account-tier-main">${mainTier}</div>` : ''}
+      <h1 class="account-detail-name">${esc(account.username)}</h1>
+      ${mainTier ? `<div class="account-tier-main">${esc(mainTier)}</div>` : ''}
     </div>
     <div class="account-detail-body">
-      ${account.description ? `<p style="color:var(--text-muted);margin-bottom:1.5rem">${account.description}</p>` : ''}
+      ${account.description ? `<p style="color:var(--text-muted);margin-bottom:1.5rem">${esc(account.description)}</p>` : ''}
       <div class="tiers-section">
         <h3>${tiersTitle}</h3>
         <div class="tiers-grid" id="tiers-grid">${tiersHtml}</div>
@@ -167,11 +190,11 @@ function renderAccount(account, tierData) {
 
   setupPayment(account);
 
-  // Pas d'actualisation API si les tiers sont saisis à la main.
   if (manual) return;
 
   startTierRefresh(account.username, (data) => {
-    document.getElementById('tiers-grid').innerHTML = renderTiersGrid(data.rankings);
+    const grid = document.getElementById('tiers-grid');
+    if (grid) grid.innerHTML = renderTiersGrid(data.rankings);
     const refreshEl = document.getElementById('last-refresh');
     if (refreshEl) refreshEl.textContent = `Dernière mise à jour : ${new Date().toLocaleTimeString('fr-FR')}`;
     const nameEl = document.querySelector('.account-tier-main');
@@ -188,13 +211,17 @@ async function init() {
 
   try {
     const account = await getAccount(accountId);
-    let tierData = { rankings: [], bestTier: null };
-    try {
-      tierData = await fetchPlayerTiers(account.username);
-    } catch { /* tiers optionnels */ }
     loading.classList.add('hidden');
     detailEl.classList.remove('hidden');
-    renderAccount(account, tierData);
+
+    // Tiers manuels → pas d'appel API (rapide). Sinon on récupère en arrière-plan.
+    if (hasManualTiers(account)) {
+      renderAccount(account, { rankings: [], bestTier: null });
+    } else {
+      let tierData = { rankings: [], bestTier: null };
+      try { tierData = await fetchPlayerTiers(account.username); } catch { /* optionnel */ }
+      renderAccount(account, tierData);
+    }
   } catch {
     loading.classList.add('hidden');
     errorState.classList.remove('hidden');

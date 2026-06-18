@@ -1,15 +1,22 @@
 /** Boutique publique (GitHub Pages) */
 export const SHOP_URL = 'https://ghost5122-boy.github.io/NovaShop/';
 
-/** API Render (livraison des identifiants après paiement). Laisse vide si indisponible. */
-export const BACKEND_URL = 'https://nova-shop.onrender.com';
+/**
+ * Backend optionnel. Laisse VIDE : le site fonctionne 100% en autonome
+ * (catalogue statique + localStorage). Aucune attente serveur = site rapide.
+ */
+export const BACKEND_URL = '';
 
-/** Lien PayPal.me (secours si le SDK ne charge pas) */
+/** Lien PayPal.me (secours si le SDK PayPal ne charge pas) */
 export const PAYPAL_ME = 'NovaShop1733';
 
-/** Client ID PayPal Live — paiement intégré sur le site (popup). */
-export const PAYPAL_CLIENT_ID =
-  'EBXwuM3xaBRRCirleypUqpMjYvF9jB-lo0QxgJS91NDjUbSjuoeT7UwngcbdKZvNgOEZM64N1BhtkQ';
+/**
+ * Client ID PayPal Live — paiement intégré sur le site (popup).
+ * IMPORTANT : c'est le « Client ID » (commence par "A..."), PAS le « Secret ».
+ * À récupérer sur developer.paypal.com → Apps & Credentials → Live → ton app → Client ID.
+ * Tant qu'il est vide ou invalide, le site bascule sur le paiement PayPal.me.
+ */
+export const PAYPAL_CLIENT_ID = '';
 
 export function getAdminUrl() {
   return 'admin/';

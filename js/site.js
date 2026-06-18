@@ -1,4 +1,4 @@
-import { getAdminUrl, SHOP_URL } from './config.js?v=5';
+import { getAdminUrl, SHOP_URL } from './config.js?v=6';
 
 export function initSiteLinks() {
   const url = getAdminUrl();
