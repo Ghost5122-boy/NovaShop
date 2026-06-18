@@ -16,9 +16,10 @@ jobs:
 
       - name: Prepare static site
         run: |
-          mkdir -p _site
+          mkdir -p _site/data
           cp index.html shop.html account.html delivery.html _site/
-          cp -r css js data admin _site/
+          cp -r css js admin _site/
+          cp data/accounts-public.json _site/data/
           cp .nojekyll _site/ 2>/dev/null || touch _site/.nojekyll
 
       - name: Deploy GitHub Pages
