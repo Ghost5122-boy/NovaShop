@@ -104,8 +104,9 @@ app.post('/api/paypal/create-order', (req, res) => {
   writeStore(store);
 
   let paypalLink = null;
-  if (store.settings.paypalEmail) {
-    paypalLink = `https://www.paypal.com/paypalme/${encodeURIComponent(store.settings.paypalEmail)}/${acc.price}EUR`;
+  const paypalMe = store.settings.paypalMe || store.settings.paypalEmail;
+  if (paypalMe) {
+    paypalLink = `https://paypal.me/${encodeURIComponent(paypalMe)}/${acc.price.toFixed(2)}`;
   }
 
   res.json({ orderId: store.orders.at(-1).id, token, amount: acc.price, paypalLink, approvalUrl: null });

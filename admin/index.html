@@ -5,36 +5,68 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin — Nova Shop</title>
   <script>
-    if (location.hostname.endsWith('github.io')) {
-      location.replace('https://nova-shop-admin.onrender.com/admin/');
-    }
+    (function () {
+      if (location.hostname.endsWith('github.io')) {
+        location.replace('https://nova-shop.onrender.com/admin/');
+      }
+      var css = document.createElement('link');
+      css.rel = 'stylesheet';
+      css.href = location.pathname.includes('/admin')
+        ? (location.pathname.replace(/\/admin\/.*$/, '') || '') + '/css/style.css'
+        : '/css/style.css';
+      if (css.href.startsWith('//')) css.href = '/css/style.css';
+      document.head.appendChild(css);
+    })();
   </script>
-  <link rel="stylesheet" href="../css/style.css">
+  <style>
+    body { margin: 0; font-family: system-ui, sans-serif; background: #f4f7fb; color: #0f172a; min-height: 100vh; }
+    .admin-login { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 2rem; }
+    .login-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 2rem; width: 100%; max-width: 400px; box-shadow: 0 4px 20px rgba(37,99,235,.08); }
+    .login-card h1 { color: #1e40af; margin-bottom: 0.25rem; }
+    .form-group { margin-bottom: 1rem; }
+    .form-group label { display: block; margin-bottom: 0.35rem; font-size: 0.88rem; font-weight: 600; }
+    .form-group input, .form-group textarea { width: 100%; padding: 0.65rem 0.85rem; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.95rem; }
+    .btn { display: inline-block; padding: 0.65rem 1.2rem; border-radius: 8px; font-weight: 600; cursor: pointer; border: none; font-size: 0.9rem; }
+    .btn-primary { background: #2563eb; color: #fff; }
+    .btn-outline { background: #fff; color: #2563eb; border: 1px solid #2563eb; text-decoration: none; }
+    .admin-panel { padding: 5.5rem 2rem 4rem; max-width: 1100px; margin: 0 auto; }
+    .admin-table { width: 100%; background: #fff; border-collapse: collapse; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0; }
+    .admin-table th, .admin-table td { padding: 0.85rem 1rem; text-align: left; border-bottom: 1px solid #e2e8f0; }
+    .admin-table th { background: #f4f7fb; font-size: 0.78rem; color: #64748b; text-transform: uppercase; }
+    .hidden { display: none !important; }
+    #backend-offline { background: #fef2f2; color: #dc2626; padding: 0.75rem 1rem; border-radius: 8px; margin-bottom: 1rem; display: none; }
+  </style>
+  <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
+  <div id="backend-offline">Serveur en cours de démarrage… Réessaie dans 30 secondes ou rafraîchis la page.</div>
+
   <div id="login-view" class="admin-login">
     <div class="login-card">
-      <h1>Admin</h1>
-      <p>Connexion requise</p>
+      <h1>Admin Nova Shop</h1>
+      <p style="color:#64748b;margin-bottom:1.25rem">Connexion requise</p>
       <form id="login-form">
         <div class="form-group">
           <label for="password">Mot de passe</label>
-          <input type="password" id="password" required placeholder="Entrez le mot de passe admin">
+          <input type="password" id="password" required placeholder="Mot de passe admin">
         </div>
         <button type="submit" class="btn btn-primary" style="width:100%">Connexion</button>
       </form>
-      <p id="login-error" style="color:#ff4757;text-align:center;margin-top:1rem;display:none"></p>
+      <p id="login-error" style="color:#dc2626;text-align:center;margin-top:1rem;display:none"></p>
+      <p style="margin-top:1.25rem;font-size:0.82rem;color:#64748b;text-align:center">
+        PayPal : <strong>paypal.me/NovaShop1733</strong>
+      </p>
     </div>
   </div>
 
   <div id="admin-view" class="hidden">
     <nav class="navbar">
-      <a href="https://ghost5122-boy.github.io/NovaShop/" id="shop-home-link" class="logo">
+      <a href="https://ghost5122-boy.github.io/NovaShop/" class="logo">
         <span class="logo-icon">NS</span>
         Nova Shop Admin
       </a>
       <div style="display:flex;gap:0.75rem;align-items:center">
-        <a href="https://ghost5122-boy.github.io/NovaShop/" class="btn btn-outline">Voir la boutique</a>
+        <a href="https://ghost5122-boy.github.io/NovaShop/" class="btn btn-outline">Boutique</a>
         <button class="btn btn-outline" id="logout-btn">Déconnexion</button>
       </div>
     </nav>
@@ -47,7 +79,7 @@
 
       <div class="admin-tabs">
         <button class="tab-btn active" data-tab="accounts">Comptes</button>
-        <button class="tab-btn" data-tab="settings">Paramètres PayPal</button>
+        <button class="tab-btn" data-tab="settings">PayPal</button>
       </div>
 
       <div id="tab-accounts">
@@ -67,15 +99,12 @@
 
       <div id="tab-settings" class="hidden">
         <div class="login-card" style="max-width:500px;margin:0">
-          <h2 style="margin-bottom:1.5rem">Configuration PayPal</h2>
+          <h2 style="margin-bottom:1.5rem;color:#1e40af">Configuration PayPal</h2>
           <form id="settings-form">
             <div class="form-group">
-              <label for="paypal-email">Nom PayPal.me (sans paypal.me/)</label>
-              <input type="text" id="paypal-email" placeholder="NovaShop18" value="NovaShop18">
-            </div>
-            <div class="form-group">
-              <label for="paypal-client-id">PayPal Client ID (optionnel, pour boutons intégrés)</label>
-              <input type="text" id="paypal-client-id" placeholder="Client ID sandbox ou live">
+              <label for="paypal-email">Nom PayPal.me</label>
+              <input type="text" id="paypal-email" placeholder="NovaShop1733" value="NovaShop1733">
+              <p style="font-size:0.8rem;color:#64748b;margin-top:0.35rem">Lien : paypal.me/<span id="paypal-preview">NovaShop1733</span></p>
             </div>
             <div class="form-group">
               <label for="site-name">Nom du site</label>
@@ -117,15 +146,21 @@
           <textarea id="acc-description" rows="3"></textarea>
         </div>
         <div class="form-group">
-          <label>
-            <input type="checkbox" id="acc-certified" checked> Compte certifié
-          </label>
+          <label><input type="checkbox" id="acc-certified" checked> Compte certifié</label>
         </div>
         <button type="submit" class="btn btn-primary" style="width:100%">Sauvegarder</button>
       </form>
     </div>
   </div>
 
-  <script type="module" src="../js/admin.js"></script>
+  <script type="module" src="/js/admin.js"></script>
+  <script type="module">
+    fetch('/health').catch(() => {
+      document.getElementById('backend-offline').style.display = 'block';
+    });
+    document.getElementById('paypal-email')?.addEventListener('input', (e) => {
+      document.getElementById('paypal-preview').textContent = e.target.value || 'NovaShop1733';
+    });
+  </script>
 </body>
 </html>

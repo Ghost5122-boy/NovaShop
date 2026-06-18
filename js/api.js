@@ -12,7 +12,7 @@ function getApiBase() {
   if (location.hostname.endsWith('github.io') && BACKEND_URL) {
     return `${BACKEND_URL.replace(/\/$/, '')}/api`;
   }
-  return `${getSiteRoot()}api`.replace(/\/+/g, '/').replace(/\/$/, '') || '/api';
+  return `${location.origin}/api`;
 }
 
 let adminToken = sessionStorage.getItem('nova_admin_token') || null;

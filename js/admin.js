@@ -1,7 +1,7 @@
 import {
   adminLogin, getAdminToken, setAdminToken,
   adminGetStore, adminSaveAccount, adminDeleteAccount, adminSaveSettings
-} from '../api.js';
+} from './api.js';
 
 const loginView = document.getElementById('login-view');
 const adminView = document.getElementById('admin-view');
@@ -54,9 +54,11 @@ function renderAccounts() {
 }
 
 function fillSettings() {
-  document.getElementById('paypal-email').value = store.settings.paypalEmail || '';
-  document.getElementById('paypal-client-id').value = store.settings.paypalClientId || '';
+  const me = store.settings.paypalMe || store.settings.paypalEmail || 'NovaShop1733';
+  document.getElementById('paypal-email').value = me;
   document.getElementById('site-name').value = store.settings.siteName || 'Nova Shop';
+  const preview = document.getElementById('paypal-preview');
+  if (preview) preview.textContent = me;
 }
 
 function openAddModal() {
@@ -130,7 +132,7 @@ document.getElementById('settings-form').addEventListener('submit', async (e) =>
   e.preventDefault();
   await adminSaveSettings({
     paypalEmail: document.getElementById('paypal-email').value.trim(),
-    paypalClientId: document.getElementById('paypal-client-id').value.trim(),
+    paypalMe: document.getElementById('paypal-email').value.trim(),
     siteName: document.getElementById('site-name').value.trim()
   });
   alert('Paramètres sauvegardés !');

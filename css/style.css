@@ -681,6 +681,83 @@ body {
 
 .nav-admin:hover { color: var(--blue-600) !important; }
 
+/* Paiement style Discord */
+.payment-discord {
+  background: #f0f4ff;
+  border: 2px solid #2563eb;
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  margin-top: 0.5rem;
+}
+
+.payment-discord-top {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  margin-bottom: 1rem;
+}
+
+.payment-paypal-icon {
+  width: 44px;
+  height: 44px;
+  background: #003087;
+  color: #009cde;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 1.4rem;
+}
+
+.payment-amount { color: var(--price); font-weight: 800; }
+
+.payment-steps {
+  margin: 0 0 1.25rem 1.1rem;
+  color: var(--text-muted);
+  font-size: 0.92rem;
+  line-height: 1.7;
+}
+
+.payment-steps strong { color: var(--text); }
+
+.btn-paypal {
+  display: block;
+  width: 100%;
+  text-align: center;
+  background: #0070ba;
+  color: white !important;
+  padding: 1rem 1.5rem;
+  border-radius: var(--radius-sm);
+  font-weight: 700;
+  font-size: 1.05rem;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s;
+  margin-bottom: 1rem;
+}
+
+.btn-paypal:hover { background: #003087; }
+
+.payment-link-row {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.payment-link-input {
+  flex: 1;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 0.82rem;
+  background: white;
+  color: var(--text);
+}
+
+.payment-confirm-btn { width: 100%; }
+
 .hidden { display: none !important; }
 
 @media (max-width: 768px) {

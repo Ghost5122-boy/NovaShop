@@ -1,7 +1,8 @@
 ﻿{
   "settings": {
     "siteName": "Nova Shop",
-    "paypalEmail": "NovaShop18",
+    "paypalEmail": "NovaShop1733",
+    "paypalMe": "NovaShop1733",
     "paypalClientId": "",
     "currency": "EUR",
     "adminPassword": "NovaShop1986*"
