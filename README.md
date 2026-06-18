@@ -1,6 +1,8 @@
-# Nova Shop — Boutique Comptes Minecraft
+# Nova Shop
 
-Site de vente de comptes Minecraft avec affichage des tiers PvPTiers, skins en direct et panneau admin.
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/Ghost5122-boy/NovaShop)
+
+Boutique de comptes Minecraft — site + admin.
 
 ## Fonctionnalités
 
