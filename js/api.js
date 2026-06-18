@@ -1,3 +1,5 @@
+import { BACKEND_URL } from './config.js';
+
 function getSiteRoot() {
   if (location.hostname.endsWith('github.io')) {
     const seg = location.pathname.split('/').filter(Boolean)[0];
@@ -6,7 +8,12 @@ function getSiteRoot() {
   return '/';
 }
 
-const API_BASE = `${getSiteRoot()}api`.replace(/\/+/g, '/').replace(/\/$/, '') || '/api';
+function getApiBase() {
+  if (location.hostname.endsWith('github.io') && BACKEND_URL) {
+    return `${BACKEND_URL.replace(/\/$/, '')}/api`;
+  }
+  return `${getSiteRoot()}api`.replace(/\/+/g, '/').replace(/\/$/, '') || '/api';
+}
 
 let adminToken = sessionStorage.getItem('nova_admin_token') || null;
 
@@ -25,7 +32,7 @@ async function request(path, options = {}) {
   if (adminToken) headers['Authorization'] = `Bearer ${adminToken}`;
 
   try {
-    const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
+    const res = await fetch(`${getApiBase()}${path}`, { ...options, headers });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.error || 'Erreur serveur');
     return data;

@@ -1,21 +1,5 @@
 services:
   - type: web
-    name: nova-shop
-    runtime: node
-    plan: free
-    buildCommand: npm install
-    startCommand: npm start
-    healthCheckPath: /health
-    envVars:
-      - key: NODE_VERSION
-        value: 20
-      - key: RENDER
-        value: true
-      - key: ADMIN_PASSWORD
-        sync: false
-        value: NovaShop1986*
-
-  - type: web
     name: nova-shop-admin
     runtime: node
     plan: free

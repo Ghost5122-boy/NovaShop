@@ -39,6 +39,27 @@ Ouvrez http://localhost:3000
 3. Entrez votre email PayPal (pour les liens paypal.me)
 4. Optionnel : Client ID PayPal pour boutons intégrés
 
+## URLs en production
+
+| Service | URL |
+|---------|-----|
+| **Boutique** (GitHub Pages) | https://ghost5122-boy.github.io/NovaShop/ |
+| **Admin + API** (Render) | https://nova-shop-admin.onrender.com/admin/ |
+
+La boutique sur GitHub Pages utilise l'API Render pour les comptes, PayPal et la livraison.
+
+### Déployer l'admin (Render)
+
+[![Deploy Admin](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/Ghost5122-boy/NovaShop)
+
+Le blueprint crée **nova-shop** (site complet) et **nova-shop-admin** (admin + API pour GitHub Pages).
+
+Si tu as déjà déployé, ajoute un service Web sur Render avec la commande : `node admin-server/start.js`
+
+Mot de passe admin : `NovaShop1986*`
+
+Modifie `js/config.js` si ton URL Render admin est différente de `nova-shop-admin.onrender.com`.
+
 ## Hébergement GitHub Pages
 
 GitHub Pages sert uniquement les fichiers statiques. Pour le paiement, l'admin et la livraison des identifiants, déployez le serveur Node.js sur [Render](https://render.com), [Railway](https://railway.app) ou similaire.

@@ -13,7 +13,10 @@ const DATA_FILE = IS_CLOUD
   ? path.join('/tmp', 'nova-shop-store.json')
   : SEED_FILE;
 
-app.use(cors());
+app.use(cors({
+  origin: true,
+  credentials: true
+}));
 app.use(express.json());
 app.use(express.static(path.join(__dirname)));
 
