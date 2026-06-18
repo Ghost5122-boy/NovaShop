@@ -189,7 +189,8 @@ app.put('/api/admin/settings', authMiddleware, (req, res) => {
   res.json(store.settings);
 });
 
-app.listen(PORT, () => {
-  console.log(`Nova Shop running at http://localhost:${PORT}`);
-  console.log(`Admin panel: http://localhost:${PORT}/admin/`);
+const HOST = process.env.RENDER || process.env.PORT ? '0.0.0.0' : 'localhost';
+
+app.listen(PORT, HOST, () => {
+  console.log(`Nova Shop running on http://${HOST}:${PORT}`);
 });
