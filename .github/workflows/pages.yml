@@ -13,10 +13,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Prepare static site
+        run: |
+          mkdir -p _site
+          cp index.html shop.html account.html delivery.html _site/
+          cp -r css js data admin _site/
+          cp .nojekyll _site/ 2>/dev/null || touch _site/.nojekyll
+
       - name: Deploy GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: .
-          exclude_assets: '.github,node_modules,logs,.git'
-          destination_dir: .
+          publish_dir: ./_site
+          force_orphan: true

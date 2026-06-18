@@ -1,3 +1,6 @@
+﻿node_modules/
 logs/
 .nova-shop.pid
 MES-URLS.txt
+.env
+.vercel

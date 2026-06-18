@@ -1,4 +1,12 @@
-const API_BASE = '/api';
+function getSiteRoot() {
+  if (location.hostname.endsWith('github.io')) {
+    const seg = location.pathname.split('/').filter(Boolean)[0];
+    if (seg) return `/${seg}/`;
+  }
+  return '/';
+}
+
+const API_BASE = `${getSiteRoot()}api`.replace(/\/+/g, '/').replace(/\/$/, '') || '/api';
 
 let adminToken = sessionStorage.getItem('nova_admin_token') || null;
 
@@ -30,8 +38,7 @@ async function request(path, options = {}) {
 }
 
 async function fallbackRequest(path) {
-  const base = import.meta.url.includes('/admin/') ? '../' : './';
-  const res = await fetch(`${base}data/accounts-public.json`);
+  const res = await fetch(`${getSiteRoot()}data/accounts-public.json`);
   const store = await res.json();
   if (path === '/accounts') {
     return store.accounts.filter(a => !a.sold);
