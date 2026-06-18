@@ -93,13 +93,19 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   const password = document.getElementById('password').value;
   const errorEl = document.getElementById('login-error');
+  const btn = e.target.querySelector('button[type="submit"]');
+  btn.disabled = true;
+  btn.textContent = 'Connexion...';
   try {
     await adminLogin(password);
     errorEl.style.display = 'none';
     showAdmin();
   } catch {
-    errorEl.textContent = 'Mot de passe incorrect';
+    errorEl.textContent = 'Mot de passe incorrect ou serveur en démarrage — attends 30 sec et réessaie';
     errorEl.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Connexion';
   }
 });
 

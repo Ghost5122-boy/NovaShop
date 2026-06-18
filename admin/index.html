@@ -4,20 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin — Nova Shop</title>
-  <script>
-    (function () {
-      if (location.hostname.endsWith('github.io')) {
-        location.replace('https://nova-shop.onrender.com/admin/');
-      }
-      var css = document.createElement('link');
-      css.rel = 'stylesheet';
-      css.href = location.pathname.includes('/admin')
-        ? (location.pathname.replace(/\/admin\/.*$/, '') || '') + '/css/style.css'
-        : '/css/style.css';
-      if (css.href.startsWith('//')) css.href = '/css/style.css';
-      document.head.appendChild(css);
-    })();
-  </script>
+  <link rel="stylesheet" href="../css/style.css">
   <style>
     body { margin: 0; font-family: system-ui, sans-serif; background: #f4f7fb; color: #0f172a; min-height: 100vh; }
     .admin-login { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 2rem; }
@@ -25,7 +12,7 @@
     .login-card h1 { color: #1e40af; margin-bottom: 0.25rem; }
     .form-group { margin-bottom: 1rem; }
     .form-group label { display: block; margin-bottom: 0.35rem; font-size: 0.88rem; font-weight: 600; }
-    .form-group input, .form-group textarea { width: 100%; padding: 0.65rem 0.85rem; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.95rem; }
+    .form-group input, .form-group textarea { width: 100%; padding: 0.65rem 0.85rem; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.95rem; box-sizing: border-box; }
     .btn { display: inline-block; padding: 0.65rem 1.2rem; border-radius: 8px; font-weight: 600; cursor: pointer; border: none; font-size: 0.9rem; }
     .btn-primary { background: #2563eb; color: #fff; }
     .btn-outline { background: #fff; color: #2563eb; border: 1px solid #2563eb; text-decoration: none; }
@@ -34,12 +21,18 @@
     .admin-table th, .admin-table td { padding: 0.85rem 1rem; text-align: left; border-bottom: 1px solid #e2e8f0; }
     .admin-table th { background: #f4f7fb; font-size: 0.78rem; color: #64748b; text-transform: uppercase; }
     .hidden { display: none !important; }
-    #backend-offline { background: #fef2f2; color: #dc2626; padding: 0.75rem 1rem; border-radius: 8px; margin-bottom: 1rem; display: none; }
+    #backend-offline {
+      background: #fffbeb; color: #92400e; border: 1px solid #fcd34d;
+      padding: 0.85rem 1rem; border-radius: 8px; margin: 1rem;
+      font-size: 0.9rem; display: none;
+    }
   </style>
-  <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
-  <div id="backend-offline">Serveur en cours de démarrage… Réessaie dans 30 secondes ou rafraîchis la page.</div>
+  <div id="backend-offline">
+    ⏳ Le serveur Render démarre (30–60 sec la 1ère fois). Attends un peu puis réessaie de te connecter.
+    <button type="button" id="retry-backend" class="btn btn-outline" style="margin-left:0.5rem;padding:0.35rem 0.75rem">Réessayer</button>
+  </div>
 
   <div id="login-view" class="admin-login">
     <div class="login-card">
@@ -61,12 +54,12 @@
 
   <div id="admin-view" class="hidden">
     <nav class="navbar">
-      <a href="https://ghost5122-boy.github.io/NovaShop/" class="logo">
+      <a href="../index.html" class="logo">
         <span class="logo-icon">NS</span>
         Nova Shop Admin
       </a>
       <div style="display:flex;gap:0.75rem;align-items:center">
-        <a href="https://ghost5122-boy.github.io/NovaShop/" class="btn btn-outline">Boutique</a>
+        <a href="../shop.html" class="btn btn-outline">Boutique</a>
         <button class="btn btn-outline" id="logout-btn">Déconnexion</button>
       </div>
     </nav>
@@ -153,11 +146,27 @@
     </div>
   </div>
 
-  <script type="module" src="/js/admin.js"></script>
+  <script type="module" src="../js/admin.js"></script>
   <script type="module">
-    fetch('/health').catch(() => {
-      document.getElementById('backend-offline').style.display = 'block';
-    });
+    import { BACKEND_URL } from '../js/config.js';
+
+    async function checkBackend() {
+      const el = document.getElementById('backend-offline');
+      try {
+        const ctrl = new AbortController();
+        setTimeout(() => ctrl.abort(), 12000);
+        const res = await fetch(`${BACKEND_URL}/health`, { signal: ctrl.signal });
+        if (res.ok) {
+          el.style.display = 'none';
+          return true;
+        }
+      } catch { /* serveur en démarrage */ }
+      el.style.display = 'block';
+      return false;
+    }
+
+    checkBackend();
+    document.getElementById('retry-backend')?.addEventListener('click', checkBackend);
     document.getElementById('paypal-email')?.addEventListener('input', (e) => {
       document.getElementById('paypal-preview').textContent = e.target.value || 'NovaShop1733';
     });

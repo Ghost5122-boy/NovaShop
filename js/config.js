@@ -7,8 +7,9 @@ export const BACKEND_URL = 'https://nova-shop.onrender.com';
 /** Lien PayPal.me — style Discord */
 export const PAYPAL_ME = 'NovaShop1733';
 
+/** Admin hébergé sur GitHub Pages (instant, pas d'écran Render) */
 export function getAdminUrl() {
-  return `${BACKEND_URL.replace(/\/$/, '')}/admin/`;
+  return `${SHOP_URL.replace(/\/$/, '')}/admin/`;
 }
 
 export function getPayPalUrl(amount) {
