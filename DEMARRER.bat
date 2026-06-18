@@ -1,8 +1,5 @@
 @echo off
-title Nova Shop - Serveur
+title Nova Shop - Hebergeur PC
 cd /d "%~dp0"
-echo.
-echo  Demarrage de Nova Shop...
-echo.
-powershell -ExecutionPolicy Bypass -File "%~dp0start.ps1"
+powershell -ExecutionPolicy Bypass -NoProfile -File "%~dp0host.ps1"
 pause

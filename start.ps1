@@ -1,7 +1,7 @@
 # Nova Shop - Serveur local (sans Node.js)
 # Double-cliquez sur DEMARRER.bat ou lancez: powershell -ExecutionPolicy Bypass -File start.ps1
 
-$Port = 3000
+$Port = 4782
 $Root = $PSScriptRoot
 $DataFile = Join-Path $Root "data\store.json"
 $Sessions = @{}
@@ -14,7 +14,8 @@ function Read-Store {
 }
 
 function Write-Store($store) {
-    $store | ConvertTo-Json -Depth 10 | Set-Content $DataFile -Encoding UTF8
+    $json = $store | ConvertTo-Json -Depth 10
+    [System.IO.File]::WriteAllText($DataFile, $json, [System.Text.UTF8Encoding]::new($false))
 }
 
 function Send-Json($response, $obj, $code = 200) {

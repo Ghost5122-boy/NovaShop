@@ -1,35 +1,43 @@
-# Mettre Nova Shop en ligne (Render — gratuit)
+# Heberger Nova Shop sur Internet (gratuit, pas sur ton PC)
 
-## Étapes (5 minutes)
+## Option recommandee : Render.com (gratuit)
 
-1. Crée un compte sur **https://render.com** (gratuit, avec GitHub ou email)
+### Methode rapide (5 min)
 
-2. Crée un repo GitHub :
-   - Va sur **https://github.com/new**
-   - Nom : `nova-minecraft-shop`
-   - Crée le repo (vide)
+1. **Double-clic sur `DEPLOYER-CLOUD.bat`**
+2. Entre ton pseudo GitHub quand demande
+3. Si tu n'as pas de compte GitHub : cree-en un sur [github.com](https://github.com)
+4. Cree le repo vide : [github.com/new](https://github.com/new) → nom `nova-minecraft-shop`
+5. Le script envoie le code, puis ouvre Render
+6. Sur Render : **New Blueprint Instance** → choisis ton repo → **Apply**
+7. Attends 2-3 minutes → tu recois une URL publique
 
-3. Envoie le code depuis ton PC (dans le dossier du projet) :
-   ```powershell
-   cd C:\Users\cugur\Projects\nova-minecraft-shop
-   git remote add origin https://github.com/TON-PSEUDO/nova-minecraft-shop.git
-   git branch -M main
-   git push -u origin main
-   ```
+### Tes URLs apres deploiement
 
-4. Sur Render :
-   - **New +** → **Blueprint**
-   - Connecte ton repo GitHub `nova-minecraft-shop`
-   - Render lit automatiquement `render.yaml`
-   - Clique **Apply**
+| Page | URL |
+|------|-----|
+| Boutique | `https://nova-shop-xxxx.onrender.com` |
+| Admin | `https://nova-shop-xxxx.onrender.com/admin/` |
+| Mot de passe | `NovaShop1986*` |
 
-5. Attends 2-3 minutes. Tu obtiens une URL du type :
-   `https://nova-shop-xxxx.onrender.com`
+---
 
-6. Admin : `https://ton-url.onrender.com/admin/`  
-   Mot de passe : `NovaShop1986*`
+## Important
 
-## URL temporaire (tunnel local)
+- **Gratuit** : le site "s'endort" apres 15 min sans visiteurs (premiere visite = 30 sec de chargement)
+- **Donnees** : les comptes ajoutes via l'admin sont gardes tant que le serveur tourne. Pour une sauvegarde permanente, redeploie rarement ou contacte-moi pour ajouter une base MongoDB gratuite.
+- **PayPal** : configure ton email dans Admin → Parametres PayPal une fois en ligne
 
-Si le serveur tourne chez toi (`DEMARRER.bat`), un tunnel public peut être actif.
-Cette URL change à chaque redémarrage et ne marche que tant que ton PC est allumé.
+---
+
+## Alternative : Railway.app
+
+1. [railway.app](https://railway.app) → New Project → Deploy from GitHub
+2. Choisis `nova-minecraft-shop`
+3. Railway detecte Node.js automatiquement
+
+---
+
+## Tu n'as plus besoin de DEMARRER.bat
+
+Une fois sur Render, ton PC peut etre eteint — le site tourne dans le cloud.

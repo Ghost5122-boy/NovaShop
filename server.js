@@ -6,21 +6,24 @@ const crypto = require('crypto');
 const { v4: uuidv4 } = require('uuid');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 4782;
 const DATA_FILE = path.join(__dirname, 'data', 'store.json');
 
 app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname)));
 
+app.get('/health', (req, res) => res.json({ ok: true }));
+
 const sessions = new Map();
 
 function readStore() {
-  return JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
+  let raw = fs.readFileSync(DATA_FILE, 'utf8').replace(/^\uFEFF/, '');
+  return JSON.parse(raw);
 }
 
 function writeStore(store) {
-  fs.writeFileSync(DATA_FILE, JSON.stringify(store, null, 2));
+  fs.writeFileSync(DATA_FILE, JSON.stringify(store, null, 2), 'utf8');
 }
 
 function generateToken() {
@@ -142,7 +145,8 @@ app.post('/api/paypal/confirm', (req, res) => {
 
 app.post('/api/admin/login', (req, res) => {
   const store = readStore();
-  if (req.body.password !== store.settings.adminPassword) {
+  const adminPass = process.env.ADMIN_PASSWORD || store.settings.adminPassword;
+  if (req.body.password !== adminPass) {
     return res.status(401).json({ error: 'Mot de passe incorrect' });
   }
   const token = generateToken();
@@ -189,8 +193,11 @@ app.put('/api/admin/settings', authMiddleware, (req, res) => {
   res.json(store.settings);
 });
 
-const HOST = process.env.RENDER || process.env.PORT ? '0.0.0.0' : 'localhost';
+const HOST = process.env.PORT || process.env.RENDER ? '0.0.0.0' : '127.0.0.1';
 
 app.listen(PORT, HOST, () => {
-  console.log(`Nova Shop running on http://${HOST}:${PORT}`);
+  const ip = HOST === '0.0.0.0' ? 'localhost' : HOST;
+  console.log(`Nova Shop actif`);
+  console.log(`  Boutique : http://${ip}:${PORT}`);
+  console.log(`  Admin    : http://${ip}:${PORT}/admin/`);
 });
