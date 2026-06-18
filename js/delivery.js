@@ -1,0 +1,93 @@
+import { getCredentials, capturePayPalOrder } from './api.js';
+
+const params = new URLSearchParams(window.location.search);
+const accountId = params.get('accountId') || params.get('id');
+const token = params.get('token');
+const paypalOrderId = params.get('token') && params.get('PayerID') ? params.get('token') : null;
+
+const loading = document.getElementById('loading');
+const content = document.getElementById('delivery-content');
+const errorState = document.getElementById('error-state');
+
+function copyText(text) {
+  navigator.clipboard.writeText(text).then(() => {
+    alert('Copié !');
+  });
+}
+
+function renderCredentials(data) {
+  content.innerHTML = `
+    <div class="delivery-success-icon" style="font-size:2.5rem;color:var(--blue-600);font-weight:800">OK</div>
+    <h1>Paiement Confirmé !</h1>
+    <p style="color:var(--text-muted);margin-bottom:1rem">
+      Voici les identifiants de votre compte <strong>${data.username}</strong>
+    </p>
+    <div class="credential-box">
+      <div class="credential-row">
+        <div>
+          <div class="credential-label">Pseudo Minecraft</div>
+          <div class="credential-value">${data.username}</div>
+        </div>
+        <button class="copy-btn" onclick="navigator.clipboard.writeText('${data.username}')">📋</button>
+      </div>
+      <div class="credential-row">
+        <div>
+          <div class="credential-label">Email du compte</div>
+          <div class="credential-value" id="email-val">${data.email}</div>
+        </div>
+        <button class="copy-btn" data-copy="${data.email}">📋</button>
+      </div>
+      <div class="credential-row">
+        <div>
+          <div class="credential-label">Mot de passe</div>
+          <div class="credential-value" id="pass-val">${data.password}</div>
+        </div>
+        <button class="copy-btn" data-copy="${data.password}">📋</button>
+      </div>
+    </div>
+    <p style="font-size:0.85rem;color:var(--text-muted)">
+      Conservez ces informations en lieu sûr. Changez le mot de passe après connexion.
+    </p>
+    <a href="shop.html" class="btn btn-outline" style="margin-top:1.5rem">Retour à la boutique</a>
+  `;
+
+  content.querySelectorAll('[data-copy]').forEach(btn => {
+    btn.addEventListener('click', () => copyText(btn.dataset.copy));
+  });
+}
+
+async function init() {
+  if (!accountId) {
+    showError('Paramètres manquants.');
+    return;
+  }
+
+  try {
+    let orderToken = token;
+
+    if (paypalOrderId && params.get('PayerID')) {
+      const result = await capturePayPalOrder(paypalOrderId, accountId);
+      orderToken = result.token;
+    }
+
+    if (!orderToken) {
+      showError('Token de commande invalide. Contactez le support.');
+      return;
+    }
+
+    const credentials = await getCredentials(accountId, orderToken);
+    loading.classList.add('hidden');
+    content.classList.remove('hidden');
+    renderCredentials(credentials);
+  } catch (err) {
+    showError(err.message || 'Impossible de récupérer les identifiants.');
+  }
+}
+
+function showError(msg) {
+  loading.classList.add('hidden');
+  errorState.classList.remove('hidden');
+  document.getElementById('error-message').textContent = msg;
+}
+
+init();

@@ -1,0 +1,20 @@
+{
+  "accounts": [
+    {
+      "id": "acc-demo-1",
+      "username": "ItzRealMe",
+      "price": 49.99,
+      "certified": true,
+      "description": "Compte PvP premium avec excellents tiers Crystal et SMP.",
+      "sold": false
+    },
+    {
+      "id": "acc-demo-2",
+      "username": "Dream",
+      "price": 29.99,
+      "certified": true,
+      "description": "Compte certifié avec skin personnalisé.",
+      "sold": false
+    }
+  ]
+}

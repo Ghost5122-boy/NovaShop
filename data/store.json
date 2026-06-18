@@ -1,0 +1,41 @@
+﻿{
+    "settings":  {
+                     "siteName":  "Nova Shop",
+                     "paypalEmail":  "",
+                     "paypalClientId":  "",
+                     "currency":  "EUR",
+                     "adminPassword":  "NovaShop1986*"
+                 },
+    "accounts":  [
+                     {
+                         "id":  "acc-demo-1",
+                         "username":  "ItzRealMe",
+                         "price":  49.99,
+                         "certified":  true,
+                         "description":  "Compte PvP premium avec excellents tiers Crystal et SMP.",
+                         "sold":  false,
+                         "email":  "demo@example.com",
+                         "password":  "DemoPassword123!"
+                     },
+                     {
+                         "id":  "acc-demo-2",
+                         "username":  "Dream",
+                         "price":  29.99,
+                         "certified":  true,
+                         "description":  "Compte certifié avec skin personnalisé.",
+                         "sold":  false,
+                         "email":  "dream@example.com",
+                         "password":  "DreamPass456!"
+                     }
+                 ],
+    "orders":  [
+                   {
+                       "id":  "597b5691-2461-4c84-8e96-c75e9099ad9d",
+                       "createdAt":  "2026-06-18T15:47:16.1055269+02:00",
+                       "amount":  49.99,
+                       "accountId":  "acc-demo-1",
+                       "token":  "9e87e7b4d8ab4694936f4293cf640b7e5a2d078ee177498fae062d28e5bfe5f9",
+                       "paid":  false
+                   }
+               ]
+}

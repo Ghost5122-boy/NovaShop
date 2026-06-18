@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Compte — Nova Shop</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <nav class="navbar">
+    <a href="index.html" class="logo">
+      <span class="logo-icon">NS</span>
+      Nova Shop
+    </a>
+    <ul class="nav-links">
+      <li><a href="index.html">Accueil</a></li>
+      <li><a href="shop.html">Boutique</a></li>
+    </ul>
+    <a href="shop.html" class="btn btn-outline">← Retour</a>
+  </nav>
+
+  <main class="account-page">
+    <div id="loading" class="loading">
+      <div class="spinner"></div>
+      Chargement du compte...
+    </div>
+    <div id="account-detail" class="account-detail hidden"></div>
+    <div id="error-state" class="empty-state hidden">
+      <p>Compte introuvable.</p>
+      <a href="shop.html" class="btn btn-primary" style="margin-top:1rem">Retour à la boutique</a>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <p>&copy; 2026 Nova Shop</p>
+  </footer>
+
+  <script type="module" src="js/account.js"></script>
+</body>
+</html>

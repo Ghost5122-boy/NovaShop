@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Livraison — Nova Shop</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <nav class="navbar">
+    <a href="index.html" class="logo">
+      <span class="logo-icon">NS</span>
+      Nova Shop
+    </a>
+    <ul class="nav-links">
+      <li><a href="shop.html">Boutique</a></li>
+    </ul>
+  </nav>
+
+  <main class="delivery-page">
+    <div id="loading" class="loading">
+      <div class="spinner"></div>
+      Vérification du paiement...
+    </div>
+    <div id="delivery-content" class="delivery-card hidden"></div>
+    <div id="error-state" class="delivery-card hidden">
+      <p id="error-message">Erreur lors de la livraison.</p>
+      <a href="shop.html" class="btn btn-primary" style="margin-top:1rem">Retour à la boutique</a>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <p>&copy; 2026 Nova Shop</p>
+  </footer>
+
+  <script type="module" src="js/delivery.js"></script>
+</body>
+</html>
