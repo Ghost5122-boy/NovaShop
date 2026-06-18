@@ -1,7 +1,7 @@
 // Couche de données 100% navigateur (localStorage) — aucun serveur requis.
 // L'admin, la boutique, le paiement et la livraison fonctionnent hors-ligne.
 
-import { PAYPAL_ME, PAYPAL_CLIENT_ID } from './config.js';
+import { PAYPAL_ME, PAYPAL_CLIENT_ID } from './config.js?v=4';
 
 const STORE_KEY = 'nova_store_v2';
 const TOKEN_KEY = 'nova_admin_token';
@@ -106,7 +106,8 @@ export async function getPublicSettings() {
   return {
     siteName: s.siteName || 'Nova Shop',
     paypalMe: s.paypalMe || PAYPAL_ME,
-    paypalClientId: s.paypalClientId || ''
+    // Le Client ID réglé dans l'admin gagne, sinon celui du code (par défaut pour tous).
+    paypalClientId: s.paypalClientId || PAYPAL_CLIENT_ID || ''
   };
 }
 

@@ -2,7 +2,10 @@ import {
   adminLogin, getAdminToken, setAdminToken,
   adminGetStore, adminSaveAccount, adminDeleteAccount, adminSaveSettings,
   exportStore, importStore
-} from './api.js';
+} from './api.js?v=4';
+import { TIER_VALUES, tierValueClass } from './tiers.js?v=4';
+
+let currentTiers = [];
 
 const loginView = document.getElementById('login-view');
 const adminView = document.getElementById('admin-view');
@@ -94,12 +97,30 @@ function fillSettings() {
   if (preview) preview.textContent = me;
 }
 
+function renderTierList() {
+  const el = document.getElementById('tier-list');
+  el.innerHTML = currentTiers.map((t, i) => `
+    <span class="tier-chip">
+      <span class="tier-badge ${tierValueClass(t.value)}">${escapeHtml(t.mode)} ${escapeHtml(t.value)}</span>
+      <button type="button" class="tier-chip-remove" data-i="${i}" aria-label="Retirer">&times;</button>
+    </span>
+  `).join('') || '<span class="cell-muted">Aucun tier ajouté</span>';
+  el.querySelectorAll('.tier-chip-remove').forEach(btn => {
+    btn.addEventListener('click', () => {
+      currentTiers.splice(Number(btn.dataset.i), 1);
+      renderTierList();
+    });
+  });
+}
+
 function openAddModal() {
   document.getElementById('modal-title').textContent = 'Ajouter un compte';
   document.getElementById('account-form').reset();
   document.getElementById('acc-id').value = '';
   document.getElementById('acc-certified').checked = true;
   document.getElementById('acc-sold').checked = false;
+  currentTiers = [];
+  renderTierList();
   accountModal.classList.add('active');
 }
 
@@ -115,6 +136,8 @@ function openEditModal(id) {
   document.getElementById('acc-description').value = acc.description || '';
   document.getElementById('acc-certified').checked = !!acc.certified;
   document.getElementById('acc-sold').checked = !!acc.sold;
+  currentTiers = Array.isArray(acc.tiers) ? acc.tiers.map(t => ({ ...t })) : [];
+  renderTierList();
   accountModal.classList.add('active');
 }
 
@@ -165,7 +188,8 @@ document.getElementById('account-form').addEventListener('submit', async (e) => 
     password: document.getElementById('acc-password').value,
     description: document.getElementById('acc-description').value.trim(),
     certified: document.getElementById('acc-certified').checked,
-    sold: document.getElementById('acc-sold').checked
+    sold: document.getElementById('acc-sold').checked,
+    tiers: currentTiers.map(t => ({ ...t }))
   };
   await adminSaveAccount(account);
   accountModal.classList.remove('active');
@@ -224,6 +248,22 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     document.getElementById('tab-orders').classList.toggle('hidden', tab !== 'orders');
     document.getElementById('tab-settings').classList.toggle('hidden', tab !== 'settings');
   });
+});
+
+const tierValueSelect = document.getElementById('tier-value');
+tierValueSelect.innerHTML = TIER_VALUES.map(v => `<option value="${v}">${v}</option>`).join('');
+
+document.getElementById('tier-add-btn').addEventListener('click', () => {
+  const mode = document.getElementById('tier-mode').value.trim();
+  const value = document.getElementById('tier-value').value;
+  if (!mode) { document.getElementById('tier-mode').focus(); return; }
+  currentTiers.push({ mode, value });
+  document.getElementById('tier-mode').value = '';
+  renderTierList();
+});
+
+document.getElementById('tier-mode').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') { e.preventDefault(); document.getElementById('tier-add-btn').click(); }
 });
 
 if (getAdminToken()) {

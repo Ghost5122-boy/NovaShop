@@ -1,6 +1,6 @@
-import { getAccount, createPayPalOrder, confirmPayment, getPublicSettings } from './api.js';
-import { PAYPAL_ME } from './config.js';
-import { fetchPlayerTiers, getSkinUrl, startTierRefresh } from './tiers.js';
+import { getAccount, createPayPalOrder, confirmPayment, getPublicSettings } from './api.js?v=4';
+import { PAYPAL_ME } from './config.js?v=4';
+import { fetchPlayerTiers, getSkinUrl, startTierRefresh, tierValueClass, bestManualTier } from './tiers.js?v=4';
 
 const params = new URLSearchParams(window.location.search);
 const accountId = params.get('id');
@@ -21,6 +21,25 @@ function renderTiersGrid(rankings) {
       ${r.peakTier ? `<div style="font-size:0.7rem;color:var(--text-muted);margin-top:0.2rem">Peak: ${r.peakTier}</div>` : ''}
     </div>
   `).join('');
+}
+
+function renderManualGrid(tiers) {
+  if (!tiers?.length) {
+    return '<p style="color:var(--text-muted)">Aucun tier.</p>';
+  }
+  return tiers.map(t => {
+    const cls = tierValueClass(t.value);
+    const isHt = cls.startsWith('ht');
+    return `
+    <div class="tier-item">
+      <div class="tier-item-mode">${t.mode}</div>
+      <div class="tier-item-value ${isHt ? 'ht' : 'lt'}">${t.value}</div>
+    </div>`;
+  }).join('');
+}
+
+function hasManualTiers(account) {
+  return Array.isArray(account.tiers) && account.tiers.length > 0;
 }
 
 function loadPayPalSdk(clientId) {
@@ -108,6 +127,13 @@ async function setupPayment(account) {
 }
 
 function renderAccount(account, tierData) {
+  const manual = hasManualTiers(account);
+  const mainTier = manual ? bestManualTier(account.tiers) : tierData?.bestTier;
+  const tiersTitle = manual
+    ? 'Tiers'
+    : 'Tiers PvPTiers <span id="tier-status" style="font-weight:400;font-size:0.8rem">(actualisation auto 30s)</span>';
+  const tiersHtml = manual ? renderManualGrid(account.tiers) : renderTiersGrid(tierData?.rankings);
+
   detailEl.innerHTML = `
     <div class="account-detail-header">
       <div class="account-detail-skin">
@@ -115,14 +141,14 @@ function renderAccount(account, tierData) {
       </div>
       ${account.certified ? '<span class="certified-badge">Compte certifié</span>' : ''}
       <h1 class="account-detail-name">${account.username}</h1>
-      ${tierData?.bestTier ? `<div class="account-tier-main">${tierData.bestTier}</div>` : ''}
+      ${mainTier ? `<div class="account-tier-main">${mainTier}</div>` : ''}
     </div>
     <div class="account-detail-body">
       ${account.description ? `<p style="color:var(--text-muted);margin-bottom:1.5rem">${account.description}</p>` : ''}
       <div class="tiers-section">
-        <h3>Tiers PvPTiers <span id="tier-status" style="font-weight:400;font-size:0.8rem">(actualisation auto 30s)</span></h3>
-        <div class="tiers-grid" id="tiers-grid">${renderTiersGrid(tierData?.rankings)}</div>
-        <p class="tier-refresh" id="last-refresh">Dernière mise à jour : à l'instant</p>
+        <h3>${tiersTitle}</h3>
+        <div class="tiers-grid" id="tiers-grid">${tiersHtml}</div>
+        ${manual ? '' : '<p class="tier-refresh" id="last-refresh">Dernière mise à jour : à l\'instant</p>'}
       </div>
       <div class="account-detail-price">
         <div class="label">Prix</div>
@@ -136,10 +162,13 @@ function renderAccount(account, tierData) {
 
   setupPayment(account);
 
+  // Pas d'actualisation API si les tiers sont saisis à la main.
+  if (manual) return;
+
   startTierRefresh(account.username, (data) => {
     document.getElementById('tiers-grid').innerHTML = renderTiersGrid(data.rankings);
-    document.getElementById('last-refresh').textContent =
-      `Dernière mise à jour : ${new Date().toLocaleTimeString('fr-FR')}`;
+    const refreshEl = document.getElementById('last-refresh');
+    if (refreshEl) refreshEl.textContent = `Dernière mise à jour : ${new Date().toLocaleTimeString('fr-FR')}`;
     const nameEl = document.querySelector('.account-tier-main');
     if (nameEl && data.bestTier) nameEl.textContent = data.bestTier;
   });

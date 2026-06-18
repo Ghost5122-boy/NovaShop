@@ -30,6 +30,31 @@ export function getTierClass(tier, pos) {
   return classes.join(' ');
 }
 
+/** Valeurs possibles pour les tiers saisis à la main dans l'admin. */
+export const TIER_VALUES = ['HT1', 'LT1', 'HT2', 'LT2', 'HT3', 'LT3', 'HT4', 'LT4', 'HT5', 'LT5'];
+
+/** Classe CSS (couleur) à partir d'une valeur type "HT3" / "LT2". */
+export function tierValueClass(value = '') {
+  const v = String(value).toUpperCase();
+  const pos = v.startsWith('HT') ? 0 : 1;
+  const num = v.replace(/\D/g, '') || '';
+  return `${pos === 0 ? 'ht' : 'lt'} t${num}`;
+}
+
+/** Score d'un tier manuel : plus petit = meilleur (HT1 = meilleur). */
+export function tierValueScore(value = '') {
+  const v = String(value).toUpperCase();
+  const pos = v.startsWith('HT') ? 0 : 1;
+  const num = parseInt(v.replace(/\D/g, ''), 10) || 9;
+  return num * 2 + pos;
+}
+
+/** Meilleur tier manuel d'une liste [{mode,value}] → "HT3". */
+export function bestManualTier(tiers = []) {
+  if (!tiers.length) return null;
+  return [...tiers].sort((a, b) => tierValueScore(a.value) - tierValueScore(b.value))[0].value;
+}
+
 export async function fetchPlayerTiers(username) {
   const key = username.toLowerCase();
   const cached = tiersCache.get(key);

@@ -9,7 +9,7 @@ export const PAYPAL_ME = 'NovaShop1733';
  * Laisse vide ici : il se règle dans l'admin → onglet Réglages.
  * Pour l'obtenir : https://developer.paypal.com → Apps & Credentials → Live → Create App → copier le Client ID.
  */
-export const PAYPAL_CLIENT_ID = '';
+export const PAYPAL_CLIENT_ID = 'Abn2711UEhUIemX3earI_';
 
 /** Admin (chemin relatif depuis la racine du site) */
 export function getAdminUrl() {

@@ -164,6 +164,15 @@
           <textarea id="acc-description" rows="3" placeholder="Détails du compte..."></textarea>
         </div>
         <div class="form-group">
+          <label>Tiers (saisis à la main)</label>
+          <div class="tier-editor">
+            <input type="text" id="tier-mode" placeholder="Mode (ex : Crystal)" class="tier-mode-input">
+            <select id="tier-value" class="tier-value-select"></select>
+            <button type="button" id="tier-add-btn" class="btn btn-outline btn-sm">Ajouter</button>
+          </div>
+          <div id="tier-list" class="tier-list"></div>
+        </div>
+        <div class="form-group">
           <label class="checkbox-row">
             <input type="checkbox" id="acc-certified" checked> Compte certifié
           </label>
@@ -178,6 +187,6 @@
     </div>
   </div>
 
-  <script type="module" src="../js/admin.js"></script>
+  <script type="module" src="../js/admin.js?v=4"></script>
 </body>
 </html>

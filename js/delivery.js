@@ -1,4 +1,4 @@
-import { getCredentials, capturePayPalOrder } from './api.js';
+import { getCredentials, capturePayPalOrder } from './api.js?v=4';
 
 const params = new URLSearchParams(window.location.search);
 const accountId = params.get('accountId') || params.get('id');

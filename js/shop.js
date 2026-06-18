@@ -1,5 +1,5 @@
-import { getAccounts } from './api.js';
-import { fetchPlayerTiers, getSkinUrl, getTierClass, startTierRefresh } from './tiers.js';
+import { getAccounts } from './api.js?v=4';
+import { fetchPlayerTiers, getSkinUrl, getTierClass, startTierRefresh, tierValueClass, bestManualTier } from './tiers.js?v=4';
 
 const carousel = document.getElementById('carousel');
 const loading = document.getElementById('loading');
@@ -14,10 +14,23 @@ function renderTiersBadges(rankings, limit = 4) {
   ).join('');
 }
 
+function renderManualBadges(tiers, limit = 4) {
+  return tiers.slice(0, limit).map(t =>
+    `<span class="tier-badge ${tierValueClass(t.value)}">${t.mode} ${t.value}</span>`
+  ).join('');
+}
+
+function hasManualTiers(account) {
+  return Array.isArray(account.tiers) && account.tiers.length > 0;
+}
+
 function createCard(account, tierData) {
   const card = document.createElement('div');
   card.className = 'account-card';
   card.dataset.id = account.id;
+  const manual = hasManualTiers(account);
+  const mainTier = manual ? bestManualTier(account.tiers) : (tierData?.bestTier || '...');
+  const badges = manual ? renderManualBadges(account.tiers) : renderTiersBadges(tierData?.rankings);
   card.innerHTML = `
     <div class="account-card-skin">
       ${account.certified ? '<span class="certified-badge">Certifié</span>' : ''}
@@ -25,8 +38,8 @@ function createCard(account, tierData) {
     </div>
     <div class="account-card-body">
       <div class="account-username">${account.username}</div>
-      <div class="account-tier-main" data-tier-main>${tierData?.bestTier || '...'}</div>
-      <div class="account-tiers-list" data-tiers-list>${renderTiersBadges(tierData?.rankings)}</div>
+      <div class="account-tier-main" data-tier-main>${mainTier}</div>
+      <div class="account-tiers-list" data-tiers-list>${badges}</div>
       <div class="account-price">${account.price.toFixed(2)} €</div>
     </div>
   `;
@@ -38,7 +51,11 @@ function createCard(account, tierData) {
   return card;
 }
 
-async function loadTiersForCard(card, username) {
+async function loadTiersForCard(card, account) {
+  // Tiers saisis à la main → priorité, pas d'appel API.
+  if (hasManualTiers(account)) return;
+
+  const username = account.username;
   const tierData = await fetchPlayerTiers(username);
   const mainEl = card.querySelector('[data-tier-main]');
   const listEl = card.querySelector('[data-tiers-list]');
@@ -67,7 +84,7 @@ async function init() {
     for (const account of accounts) {
       const card = createCard(account, null);
       carousel.appendChild(card);
-      loadTiersForCard(card, account.username);
+      loadTiersForCard(card, account);
     }
   } catch (err) {
     loading.innerHTML = `<p style="color:#ff4757">Erreur: ${err.message}</p>`;
