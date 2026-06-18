@@ -1,0 +1,12 @@
+name: Deploy Render (Node complet)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to Render
+        run: |
+          echo "Ajoute RENDER_DEPLOY_HOOK dans les secrets GitHub pour activer ce deploiement auto"

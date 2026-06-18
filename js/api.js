@@ -30,7 +30,8 @@ async function request(path, options = {}) {
 }
 
 async function fallbackRequest(path) {
-  const res = await fetch('/data/accounts-public.json');
+  const base = import.meta.url.includes('/admin/') ? '../' : './';
+  const res = await fetch(`${base}data/accounts-public.json`);
   const store = await res.json();
   if (path === '/accounts') {
     return store.accounts.filter(a => !a.sold);
