@@ -7,7 +7,11 @@ const { v4: uuidv4 } = require('uuid');
 
 const app = express();
 const PORT = process.env.PORT || 4782;
-const DATA_FILE = path.join(__dirname, 'data', 'store.json');
+const IS_CLOUD = !!(process.env.RENDER || process.env.VERCEL || process.env.RAILWAY_ENVIRONMENT);
+const SEED_FILE = path.join(__dirname, 'data', 'store.json');
+const DATA_FILE = IS_CLOUD
+  ? path.join('/tmp', 'nova-shop-store.json')
+  : SEED_FILE;
 
 app.use(cors());
 app.use(express.json());
@@ -15,14 +19,25 @@ app.use(express.static(path.join(__dirname)));
 
 app.get('/health', (req, res) => res.json({ ok: true }));
 
-const sessions = new Map();
+function ensureDataFile() {
+  if (!fs.existsSync(DATA_FILE)) {
+    const dir = path.dirname(DATA_FILE);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    fs.copyFileSync(SEED_FILE, DATA_FILE);
+  }
+}
 
 function readStore() {
+  ensureDataFile();
   let raw = fs.readFileSync(DATA_FILE, 'utf8').replace(/^\uFEFF/, '');
-  return JSON.parse(raw);
+  const store = JSON.parse(raw);
+  if (!store.sessions) store.sessions = {};
+  if (!store.orders) store.orders = [];
+  return store;
 }
 
 function writeStore(store) {
+  ensureDataFile();
   fs.writeFileSync(DATA_FILE, JSON.stringify(store, null, 2), 'utf8');
 }
 
@@ -32,7 +47,8 @@ function generateToken() {
 
 function authMiddleware(req, res, next) {
   const token = req.headers.authorization?.replace('Bearer ', '');
-  if (!token || !sessions.has(token)) {
+  const store = readStore();
+  if (!token || !store.sessions[token]) {
     return res.status(401).json({ error: 'Non autorisé' });
   }
   next();
@@ -42,8 +58,6 @@ function publicAccount(acc) {
   const { email, password, ...pub } = acc;
   return pub;
 }
-
-// --- Public API ---
 
 app.get('/api/accounts', (req, res) => {
   const store = readStore();
@@ -66,14 +80,8 @@ app.get('/api/accounts/:id/credentials', (req, res) => {
   }
   const acc = store.accounts.find(a => a.id === req.params.id);
   if (!acc) return res.status(404).json({ error: 'Compte introuvable' });
-  res.json({
-    username: acc.username,
-    email: acc.email,
-    password: acc.password
-  });
+  res.json({ username: acc.username, email: acc.email, password: acc.password });
 });
-
-// --- PayPal ---
 
 app.post('/api/paypal/create-order', (req, res) => {
   const { accountId } = req.body;
@@ -82,30 +90,22 @@ app.post('/api/paypal/create-order', (req, res) => {
   if (!acc) return res.status(404).json({ error: 'Compte introuvable' });
 
   const token = generateToken();
-  const order = {
+  store.orders.push({
     id: uuidv4(),
     accountId,
     token,
     paid: false,
     amount: acc.price,
     createdAt: new Date().toISOString()
-  };
-  store.orders.push(order);
+  });
   writeStore(store);
 
-  const paypalEmail = store.settings.paypalEmail;
   let paypalLink = null;
-  if (paypalEmail) {
-    paypalLink = `https://www.paypal.com/paypalme/${encodeURIComponent(paypalEmail)}/${acc.price}EUR`;
+  if (store.settings.paypalEmail) {
+    paypalLink = `https://www.paypal.com/paypalme/${encodeURIComponent(store.settings.paypalEmail)}/${acc.price}EUR`;
   }
 
-  res.json({
-    orderId: order.id,
-    token,
-    amount: acc.price,
-    paypalLink,
-    approvalUrl: null
-  });
+  res.json({ orderId: store.orders.at(-1).id, token, amount: acc.price, paypalLink, approvalUrl: null });
 });
 
 app.post('/api/paypal/capture-order', (req, res) => {
@@ -115,33 +115,25 @@ app.post('/api/paypal/capture-order', (req, res) => {
     (o.id === orderId || o.token === orderId) && o.accountId === accountId
   );
   if (!order) return res.status(404).json({ error: 'Commande introuvable' });
-
   order.paid = true;
   order.paidAt = new Date().toISOString();
   const acc = store.accounts.find(a => a.id === accountId);
   if (acc) acc.sold = true;
   writeStore(store);
-
   res.json({ token: order.token, success: true });
 });
 
-// Manual payment confirmation endpoint (admin can also mark as paid)
 app.post('/api/paypal/confirm', (req, res) => {
-  const { token } = req.body;
   const store = readStore();
-  const order = store.orders.find(o => o.token === token);
+  const order = store.orders.find(o => o.token === req.body.token);
   if (!order) return res.status(404).json({ error: 'Commande introuvable' });
-
   order.paid = true;
   order.paidAt = new Date().toISOString();
   const acc = store.accounts.find(a => a.id === order.accountId);
   if (acc) acc.sold = true;
   writeStore(store);
-
-  res.json({ success: true });
+  res.json({ success: true, token: order.token });
 });
-
-// --- Admin API ---
 
 app.post('/api/admin/login', (req, res) => {
   const store = readStore();
@@ -150,7 +142,8 @@ app.post('/api/admin/login', (req, res) => {
     return res.status(401).json({ error: 'Mot de passe incorrect' });
   }
   const token = generateToken();
-  sessions.set(token, { loginAt: Date.now() });
+  store.sessions[token] = { loginAt: Date.now() };
+  writeStore(store);
   res.json({ token });
 });
 
@@ -160,11 +153,7 @@ app.get('/api/admin/store', authMiddleware, (req, res) => {
 
 app.post('/api/admin/accounts', authMiddleware, (req, res) => {
   const store = readStore();
-  const account = {
-    id: `acc-${uuidv4().slice(0, 8)}`,
-    ...req.body,
-    sold: false
-  };
+  const account = { id: `acc-${uuidv4().slice(0, 8)}`, ...req.body, sold: false };
   store.accounts.push(account);
   writeStore(store);
   res.json(account);
@@ -193,11 +182,11 @@ app.put('/api/admin/settings', authMiddleware, (req, res) => {
   res.json(store.settings);
 });
 
-const HOST = process.env.PORT || process.env.RENDER ? '0.0.0.0' : '127.0.0.1';
-
-app.listen(PORT, HOST, () => {
-  const ip = HOST === '0.0.0.0' ? 'localhost' : HOST;
-  console.log(`Nova Shop actif`);
-  console.log(`  Boutique : http://${ip}:${PORT}`);
-  console.log(`  Admin    : http://${ip}:${PORT}/admin/`);
-});
+if (process.env.VERCEL) {
+  module.exports = app;
+} else {
+  const HOST = IS_CLOUD ? '0.0.0.0' : '127.0.0.1';
+  app.listen(PORT, HOST, () => {
+    console.log(`Nova Shop actif sur le port ${PORT}`);
+  });
+}
