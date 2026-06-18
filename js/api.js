@@ -1,7 +1,7 @@
 // Couche de données 100% navigateur (localStorage) — aucun serveur requis.
 // L'admin, la boutique, le paiement et la livraison fonctionnent hors-ligne.
 
-import { PAYPAL_ME } from './config.js';
+import { PAYPAL_ME, PAYPAL_CLIENT_ID } from './config.js';
 
 const STORE_KEY = 'nova_store_v2';
 const TOKEN_KEY = 'nova_admin_token';
@@ -10,6 +10,7 @@ const DEFAULT_STORE = {
   settings: {
     siteName: 'Nova Shop',
     paypalMe: PAYPAL_ME,
+    paypalClientId: PAYPAL_CLIENT_ID,
     adminPassword: 'NovaShop1986*',
     currency: 'EUR'
   },
@@ -99,6 +100,15 @@ function ensureAdmin() {
 }
 
 // ---- Boutique (public) ----
+
+export async function getPublicSettings() {
+  const s = loadStore().settings;
+  return {
+    siteName: s.siteName || 'Nova Shop',
+    paypalMe: s.paypalMe || PAYPAL_ME,
+    paypalClientId: s.paypalClientId || ''
+  };
+}
 
 export async function getAccounts() {
   const store = loadStore();

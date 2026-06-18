@@ -769,6 +769,9 @@ body {
 
 .payment-confirm-btn { width: 100%; }
 
+.pay-status { text-align: center; font-size: 0.88rem; color: var(--text-muted); margin-top: 0.75rem; min-height: 1.1rem; }
+#paypal-buttons { min-height: 50px; }
+
 .hidden { display: none !important; }
 
 @media (max-width: 768px) {

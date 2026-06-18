@@ -1,12 +1,14 @@
-import { getAccount, createPayPalOrder, confirmPayment } from './api.js';
-import { getPayPalUrl, PAYPAL_ME } from './config.js';
-import { fetchPlayerTiers, getSkinUrl, getTierClass, startTierRefresh } from './tiers.js';
+import { getAccount, createPayPalOrder, confirmPayment, getPublicSettings } from './api.js';
+import { PAYPAL_ME } from './config.js';
+import { fetchPlayerTiers, getSkinUrl, startTierRefresh } from './tiers.js';
 
 const params = new URLSearchParams(window.location.search);
 const accountId = params.get('id');
 const loading = document.getElementById('loading');
 const detailEl = document.getElementById('account-detail');
 const errorState = document.getElementById('error-state');
+
+let paypalSdkPromise = null;
 
 function renderTiersGrid(rankings) {
   if (!rankings?.length) {
@@ -21,78 +23,87 @@ function renderTiersGrid(rankings) {
   `).join('');
 }
 
-function renderPaymentBox(account) {
-  const paypalUrl = getPayPalUrl(account.price);
-  const price = account.price.toFixed(2);
-  return `
+function loadPayPalSdk(clientId) {
+  if (paypalSdkPromise) return paypalSdkPromise;
+  paypalSdkPromise = new Promise((resolve, reject) => {
+    if (window.paypal) { resolve(window.paypal); return; }
+    const s = document.createElement('script');
+    s.src = `https://www.paypal.com/sdk/js?client-id=${encodeURIComponent(clientId)}&currency=EUR&intent=capture`;
+    s.onload = () => resolve(window.paypal);
+    s.onerror = () => reject(new Error('SDK PayPal'));
+    document.head.appendChild(s);
+  });
+  return paypalSdkPromise;
+}
+
+async function setupPayment(account) {
+  const box = document.getElementById('payment-box');
+  if (!box) return;
+  const settings = await getPublicSettings();
+
+  // Pas de Client ID configuré → secours simple (lien PayPal.me), sans faux bouton.
+  if (!settings.paypalClientId) {
+    box.innerHTML = `
+      <div class="payment-discord">
+        <div class="payment-discord-top">
+          <span class="payment-paypal-icon">P</span>
+          <div>
+            <strong>Paiement PayPal</strong>
+            <p>Montant : <span class="payment-amount">${account.price.toFixed(2)} €</span></p>
+          </div>
+        </div>
+        <p style="color:var(--text-muted);font-size:0.9rem;margin-bottom:1rem">
+          Envoie le montant exact à <strong>paypal.me/${settings.paypalMe}</strong>, puis contacte le vendeur
+          avec le pseudo <strong>${account.username}</strong> pour recevoir les identifiants.
+        </p>
+        <a href="https://paypal.me/${settings.paypalMe}/${account.price.toFixed(2)}"
+           target="_blank" rel="noopener noreferrer" class="btn btn-paypal">
+          Ouvrir PayPal.me
+        </a>
+        <p style="font-size:0.78rem;color:var(--text-muted);margin-top:0.75rem;text-align:center">
+          Astuce admin : ajoute ton « Client ID PayPal » dans les Réglages pour le paiement automatique sur le site.
+        </p>
+      </div>`;
+    return;
+  }
+
+  // Paiement intégré : boutons PayPal (popup sur le site, façon Discord).
+  box.innerHTML = `
     <div class="payment-discord">
       <div class="payment-discord-top">
         <span class="payment-paypal-icon">P</span>
         <div>
-          <strong>Paiement PayPal</strong>
-          <p>Montant exact : <span class="payment-amount">${price} €</span></p>
+          <strong>Paiement sécurisé PayPal</strong>
+          <p>Montant : <span class="payment-amount">${account.price.toFixed(2)} €</span></p>
         </div>
       </div>
-      <ol class="payment-steps">
-        <li>Clique sur le bouton PayPal ci-dessous</li>
-        <li>Envoie <strong>${price} €</strong> sur <strong>paypal.me/${PAYPAL_ME}</strong></li>
-        <li>Reviens ici et clique sur « J'ai payé »</li>
-      </ol>
-      <a href="${paypalUrl}" target="_blank" rel="noopener noreferrer" class="btn btn-paypal" id="paypal-pay-btn">
-        Payer ${price} € sur PayPal
-      </a>
-      <div class="payment-link-row">
-        <input type="text" class="payment-link-input" id="paypal-link-text" value="${paypalUrl}" readonly>
-        <button type="button" class="btn btn-outline btn-sm" id="copy-paypal-link">Copier le lien</button>
-      </div>
-      <button type="button" class="btn btn-primary payment-confirm-btn" id="confirm-paid-btn">
-        J'ai effectué le paiement
-      </button>
-    </div>
-  `;
-}
+      <div id="paypal-buttons"></div>
+      <p id="pay-status" class="pay-status"></p>
+    </div>`;
 
-function bindPaymentHandlers(account) {
-  const paypalUrl = getPayPalUrl(account.price);
-
-  document.getElementById('copy-paypal-link')?.addEventListener('click', async () => {
-    try {
-      await navigator.clipboard.writeText(paypalUrl);
-      const btn = document.getElementById('copy-paypal-link');
-      btn.textContent = 'Copié !';
-      setTimeout(() => { btn.textContent = 'Copier le lien'; }, 2000);
-    } catch {
-      document.getElementById('paypal-link-text')?.select();
-    }
-  });
-
-  document.getElementById('confirm-paid-btn')?.addEventListener('click', () => handleConfirmPaid(account));
-}
-
-async function handleConfirmPaid(account) {
-  const btn = document.getElementById('confirm-paid-btn');
-  btn.disabled = true;
-  btn.textContent = 'Vérification...';
-
-  let token = sessionStorage.getItem(`nova_order_${account.id}`);
-  if (!token) {
-    try {
-      const order = await createPayPalOrder(account.id);
-      token = order.token;
-      sessionStorage.setItem(`nova_order_${account.id}`, token);
-    } catch {
-      token = crypto.randomUUID?.() || String(Date.now());
-      sessionStorage.setItem(`nova_order_${account.id}`, token);
-    }
-  }
-
+  const status = document.getElementById('pay-status');
   try {
-    await confirmPayment(token);
-    window.location.href = `delivery.html?accountId=${account.id}&token=${token}`;
+    const paypal = await loadPayPalSdk(settings.paypalClientId);
+    paypal.Buttons({
+      style: { layout: 'vertical', color: 'blue', shape: 'pill', label: 'paypal', height: 48 },
+      createOrder: (data, actions) => actions.order.create({
+        purchase_units: [{
+          description: `Compte Minecraft ${account.username}`,
+          amount: { value: account.price.toFixed(2), currency_code: 'EUR' }
+        }]
+      }),
+      onApprove: async (data, actions) => {
+        status.textContent = 'Validation du paiement...';
+        await actions.order.capture();
+        const order = await createPayPalOrder(account.id);
+        await confirmPayment(order.token);
+        window.location.href = `delivery.html?accountId=${account.id}&token=${order.token}`;
+      },
+      onCancel: () => { status.textContent = 'Paiement annulé.'; },
+      onError: () => { status.textContent = 'Erreur PayPal. Réessaie ou contacte le vendeur.'; }
+    }).render('#paypal-buttons');
   } catch {
-    alert(`Paiement enregistré ! Si les identifiants ne s'affichent pas, contacte le vendeur avec le pseudo « ${account.username} » et une capture PayPal.`);
-    btn.disabled = false;
-    btn.textContent = "J'ai effectué le paiement";
+    status.textContent = 'Impossible de charger PayPal. Vérifie le Client ID dans les Réglages.';
   }
 }
 
@@ -118,12 +129,12 @@ function renderAccount(account, tierData) {
         <div class="price">${account.price.toFixed(2)} €</div>
       </div>
       <div class="buy-section">
-        ${renderPaymentBox(account)}
+        <div id="payment-box"></div>
       </div>
     </div>
   `;
 
-  bindPaymentHandlers(account);
+  setupPayment(account);
 
   startTierRefresh(account.username, (data) => {
     document.getElementById('tiers-grid').innerHTML = renderTiersGrid(data.rankings);

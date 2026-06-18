@@ -37,19 +37,30 @@ export async function fetchPlayerTiers(username) {
     return cached.data;
   }
 
-  try {
-    const res = await fetch(
-      `https://pvptiers.com/api/search_profile/${encodeURIComponent(key)}`,
-      { headers: { 'User-Agent': 'NovaShop/1.0' } }
-    );
-    if (!res.ok) throw new Error('Joueur introuvable');
-    const data = await res.json();
-    const result = parseTiersData(data);
-    tiersCache.set(key, { data: result, time: Date.now() });
-    return result;
-  } catch {
-    return { username, overall: null, points: 0, region: null, rankings: [], bestTier: null };
+  const target = `https://pvptiers.com/api/search_profile/${encodeURIComponent(key)}`;
+  // L'API PvPTiers n'autorise pas le CORS : on passe par un proxy pour
+  // pouvoir l'appeler depuis le navigateur (GitHub Pages).
+  const endpoints = [
+    `https://corsproxy.io/?url=${encodeURIComponent(target)}`,
+    `https://api.allorigins.win/raw?url=${encodeURIComponent(target)}`,
+    target
+  ];
+
+  for (const endpoint of endpoints) {
+    try {
+      const res = await fetch(endpoint);
+      if (!res.ok) continue;
+      const data = await res.json();
+      if (!data || (!data.rankings && !data.name)) continue;
+      const result = parseTiersData(data);
+      tiersCache.set(key, { data: result, time: Date.now() });
+      return result;
+    } catch {
+      /* on essaie le proxy suivant */
+    }
   }
+
+  return { username, overall: null, points: 0, region: null, rankings: [], bestTier: null };
 }
 
 function parseTiersData(data) {

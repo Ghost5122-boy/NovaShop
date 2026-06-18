@@ -91,20 +91,31 @@
           <div class="login-card" style="margin:0">
             <h2 style="margin-bottom:1.25rem;color:var(--blue-800)">PayPal & site</h2>
             <form id="settings-form">
-              <div class="form-group">
-                <label for="paypal-email">Nom PayPal.me</label>
-                <input type="text" id="paypal-email" placeholder="NovaShop1733">
-                <p style="font-size:0.8rem;color:var(--text-muted);margin-top:0.35rem">Lien : paypal.me/<span id="paypal-preview">NovaShop1733</span></p>
-              </div>
-              <div class="form-group">
-                <label for="site-name">Nom du site</label>
-                <input type="text" id="site-name" value="Nova Shop">
-              </div>
-              <div class="form-group">
-                <label for="admin-pass">Mot de passe admin</label>
-                <input type="text" id="admin-pass" placeholder="Mot de passe">
-              </div>
-              <button type="submit" class="btn btn-primary">Sauvegarder</button>
+            <div class="form-group">
+              <label for="paypal-client">PayPal Client ID (paiement sur le site)</label>
+              <input type="text" id="paypal-client" placeholder="Colle ici ton Client ID PayPal">
+              <p style="font-size:0.8rem;color:var(--text-muted);margin-top:0.35rem;line-height:1.5">
+                Pour payer directement sur le site (popup, façon Discord).<br>
+                1. Va sur <strong>developer.paypal.com</strong> → connecte-toi<br>
+                2. <strong>Apps &amp; Credentials</strong> → onglet <strong>Live</strong> → <strong>Create App</strong><br>
+                3. Copie le <strong>Client ID</strong> et colle-le ici.<br>
+                Sans ça, le paiement se fait via le lien PayPal.me.
+              </p>
+            </div>
+            <div class="form-group">
+              <label for="paypal-email">Nom PayPal.me (secours)</label>
+              <input type="text" id="paypal-email" placeholder="NovaShop1733">
+              <p style="font-size:0.8rem;color:var(--text-muted);margin-top:0.35rem">Lien : paypal.me/<span id="paypal-preview">NovaShop1733</span></p>
+            </div>
+            <div class="form-group">
+              <label for="site-name">Nom du site</label>
+              <input type="text" id="site-name" value="Nova Shop">
+            </div>
+            <div class="form-group">
+              <label for="admin-pass">Mot de passe admin</label>
+              <input type="text" id="admin-pass" placeholder="Mot de passe">
+            </div>
+            <button type="submit" class="btn btn-primary">Sauvegarder</button>
             </form>
           </div>
 

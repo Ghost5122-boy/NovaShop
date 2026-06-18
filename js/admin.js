@@ -87,6 +87,7 @@ function renderOrders() {
 function fillSettings() {
   const me = store.settings.paypalMe || store.settings.paypalEmail || 'NovaShop1733';
   document.getElementById('paypal-email').value = me;
+  document.getElementById('paypal-client').value = store.settings.paypalClientId || '';
   document.getElementById('site-name').value = store.settings.siteName || 'Nova Shop';
   document.getElementById('admin-pass').value = store.settings.adminPassword || '';
   const preview = document.getElementById('paypal-preview');
@@ -177,6 +178,7 @@ document.getElementById('settings-form').addEventListener('submit', async (e) =>
   await adminSaveSettings({
     paypalEmail: document.getElementById('paypal-email').value.trim(),
     paypalMe: document.getElementById('paypal-email').value.trim(),
+    paypalClientId: document.getElementById('paypal-client').value.trim(),
     siteName: document.getElementById('site-name').value.trim(),
     ...(pass ? { adminPassword: pass } : {})
   });
