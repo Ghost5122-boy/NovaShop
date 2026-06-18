@@ -1,10 +1,17 @@
-// Couche de données 100% navigateur (localStorage) — aucun serveur requis.
-// L'admin, la boutique, le paiement et la livraison fonctionnent hors-ligne.
+/**
+ * API hybride : backend Render → catalogue statique GitHub Pages → localStorage (local).
+ */
 
-import { PAYPAL_ME, PAYPAL_CLIENT_ID } from './config.js?v=4';
+import {
+  PAYPAL_ME,
+  PAYPAL_CLIENT_ID,
+  BACKEND_URL,
+  dataUrl
+} from './config.js?v=5';
 
 const STORE_KEY = 'nova_store_v2';
 const TOKEN_KEY = 'nova_admin_token';
+const PAID_KEY = 'nova_paid_proof';
 
 const DEFAULT_STORE = {
   settings: {
@@ -14,30 +21,13 @@ const DEFAULT_STORE = {
     adminPassword: 'NovaShop1986*',
     currency: 'EUR'
   },
-  accounts: [
-    {
-      id: 'acc-demo-1',
-      username: 'ItzRealMe',
-      price: 49.99,
-      certified: true,
-      description: 'Compte PvP premium avec excellents tiers Crystal et SMP.',
-      sold: false,
-      email: 'itzrealme@example.com',
-      password: 'ChangeMoi123!'
-    },
-    {
-      id: 'acc-demo-2',
-      username: 'Dream',
-      price: 29.99,
-      certified: true,
-      description: 'Compte certifié avec skin personnalisé.',
-      sold: false,
-      email: 'dream@example.com',
-      password: 'ChangeMoi456!'
-    }
-  ],
+  accounts: [],
   orders: []
 };
+
+let backendOk = null;
+let staticCatalog = null;
+let staticStore = null;
 
 function clone(obj) {
   return JSON.parse(JSON.stringify(obj));
@@ -51,13 +41,11 @@ function loadStore() {
       if (!store.settings) store.settings = clone(DEFAULT_STORE.settings);
       if (!Array.isArray(store.accounts)) store.accounts = [];
       if (!Array.isArray(store.orders)) store.orders = [];
-      if (!store.settings.adminPassword) store.settings.adminPassword = 'NovaShop1986*';
       if (!store.settings.paypalMe) store.settings.paypalMe = PAYPAL_ME;
+      if (!store.settings.paypalClientId) store.settings.paypalClientId = PAYPAL_CLIENT_ID;
       return store;
     }
-  } catch {
-    /* store corrompu → on repart du défaut */
-  }
+  } catch { /* store corrompu */ }
   const seed = clone(DEFAULT_STORE);
   saveStore(seed);
   return seed;
@@ -81,7 +69,87 @@ function publicAccount(acc) {
   return pub;
 }
 
-// ---- Session admin (locale) ----
+function isGitHubPages() {
+  return location.hostname.endsWith('github.io');
+}
+
+function isLocalServer() {
+  return location.hostname === '127.0.0.1' || location.hostname === 'localhost';
+}
+
+function apiBase() {
+  if (isLocalServer()) return '';
+  if (!BACKEND_URL) return null;
+  return BACKEND_URL.replace(/\/$/, '');
+}
+
+async function backendOnline() {
+  const base = apiBase();
+  if (!base && !isLocalServer()) return false;
+  if (backendOk !== null) return backendOk;
+  try {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 3000);
+    const r = await fetch(`${base || ''}/health`, { signal: ctrl.signal });
+    clearTimeout(t);
+    backendOk = r.ok;
+  } catch {
+    backendOk = false;
+  }
+  return backendOk;
+}
+
+async function apiFetch(path, opts = {}) {
+  const base = apiBase();
+  if (base === null) throw new Error('API indisponible');
+  const headers = { 'Content-Type': 'application/json', ...(opts.headers || {}) };
+  if (getAdminToken()) headers.Authorization = `Bearer ${getAdminToken()}`;
+  const res = await fetch(`${base}${path}`, { ...opts, headers });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || `Erreur ${res.status}`);
+  }
+  return res.json();
+}
+
+async function fetchStaticCatalog() {
+  if (staticCatalog) return staticCatalog;
+  const res = await fetch(dataUrl('accounts-public.json'), { cache: 'no-store' });
+  if (!res.ok) throw new Error('Catalogue indisponible');
+  const data = await res.json();
+  staticCatalog = data.accounts || [];
+  return staticCatalog;
+}
+
+async function fetchStaticStore() {
+  if (staticStore) return staticStore;
+  const res = await fetch(dataUrl('store.json'), { cache: 'no-store' });
+  if (!res.ok) throw new Error('Données boutique indisponibles');
+  staticStore = await res.json();
+  return staticStore;
+}
+
+function savePaidProof(accountId, token, paypalOrderId) {
+  sessionStorage.setItem(`${PAID_KEY}_${accountId}`, JSON.stringify({
+    token,
+    paypalOrderId,
+    at: Date.now()
+  }));
+}
+
+function getPaidProof(accountId) {
+  try {
+    const raw = sessionStorage.getItem(`${PAID_KEY}_${accountId}`);
+    if (!raw) return null;
+    const proof = JSON.parse(raw);
+    if (Date.now() - proof.at > 24 * 60 * 60 * 1000) return null;
+    return proof;
+  } catch {
+    return null;
+  }
+}
+
+// ---- Session admin ----
 
 let adminToken = sessionStorage.getItem(TOKEN_KEY) || null;
 
@@ -102,42 +170,115 @@ function ensureAdmin() {
 // ---- Boutique (public) ----
 
 export async function getPublicSettings() {
+  if (await backendOnline()) {
+    try {
+      return await apiFetch('/api/settings/public');
+    } catch { /* fallback */ }
+  }
   const s = loadStore().settings;
   return {
     siteName: s.siteName || 'Nova Shop',
     paypalMe: s.paypalMe || PAYPAL_ME,
-    // Le Client ID réglé dans l'admin gagne, sinon celui du code (par défaut pour tous).
     paypalClientId: s.paypalClientId || PAYPAL_CLIENT_ID || ''
   };
 }
 
 export async function getAccounts() {
+  if (await backendOnline()) {
+    try {
+      return await apiFetch('/api/accounts');
+    } catch { /* fallback */ }
+  }
+  if (isGitHubPages()) {
+    const accounts = await fetchStaticCatalog();
+    return accounts.filter(a => !a.sold).map(publicAccount);
+  }
   const store = loadStore();
-  return store.accounts.filter(a => !a.sold).map(publicAccount);
+  if (store.accounts.length) {
+    return store.accounts.filter(a => !a.sold).map(publicAccount);
+  }
+  try {
+    const accounts = await fetchStaticCatalog();
+    return accounts.filter(a => !a.sold).map(publicAccount);
+  } catch {
+    return [];
+  }
 }
 
 export async function getAccount(id) {
+  if (await backendOnline()) {
+    try {
+      return await apiFetch(`/api/accounts/${encodeURIComponent(id)}`);
+    } catch { /* fallback */ }
+  }
+  if (isGitHubPages()) {
+    const accounts = await fetchStaticCatalog();
+    const acc = accounts.find(a => a.id === id);
+    if (!acc) throw new Error('Compte introuvable');
+    return publicAccount(acc);
+  }
   const store = loadStore();
-  const acc = store.accounts.find(a => a.id === id);
+  let acc = store.accounts.find(a => a.id === id);
+  if (!acc) {
+    const accounts = await fetchStaticCatalog();
+    acc = accounts.find(a => a.id === id);
+  }
   if (!acc) throw new Error('Compte introuvable');
   return publicAccount(acc);
 }
 
 export async function getCredentials(id, orderToken) {
+  if (await backendOnline()) {
+    return apiFetch(`/api/accounts/${encodeURIComponent(id)}/credentials?token=${encodeURIComponent(orderToken)}`);
+  }
+
+  const proof = getPaidProof(id);
+  if (!proof || proof.token !== orderToken) {
+    throw new Error('Paiement non confirmé');
+  }
+
   const store = loadStore();
-  const order = store.orders.find(o => o.token === orderToken && o.accountId === id);
-  if (!order || !order.paid) throw new Error('Paiement non confirmé');
-  const acc = store.accounts.find(a => a.id === id);
-  if (!acc) throw new Error('Compte introuvable');
+  let order = store.orders.find(o => o.token === orderToken && o.accountId === id);
+  if (!order?.paid) {
+    try {
+      const remote = await fetchStaticStore();
+      order = remote.orders?.find(o => o.token === orderToken && o.accountId === id);
+    } catch { /* ignore */ }
+  }
+  if (!order?.paid) throw new Error('Paiement non confirmé');
+
+  let acc = store.accounts.find(a => a.id === id);
+  if (!acc || !acc.email) {
+    try {
+      const remote = await fetchStaticStore();
+      acc = remote.accounts?.find(a => a.id === id);
+    } catch { /* ignore */ }
+  }
+  if (!acc?.email) throw new Error('Compte introuvable');
   return { username: acc.username, email: acc.email, password: acc.password };
 }
 
-// ---- Paiement (PayPal.me direct) ----
+// ---- Paiement PayPal ----
 
 export async function createPayPalOrder(accountId) {
+  if (await backendOnline()) {
+    try {
+      return await apiFetch('/api/paypal/create-order', {
+        method: 'POST',
+        body: JSON.stringify({ accountId })
+      });
+    } catch { /* fallback */ }
+  }
+
   const store = loadStore();
-  const acc = store.accounts.find(a => a.id === accountId);
+  let acc = store.accounts.find(a => a.id === accountId);
+  if (!acc) {
+    const catalog = await fetchStaticCatalog().catch(() => []);
+    acc = catalog.find(a => a.id === accountId);
+    if (acc) store.accounts.push({ ...acc, email: '', password: '' });
+  }
   if (!acc) throw new Error('Compte introuvable');
+  if (acc.sold) throw new Error('Ce compte est déjà vendu');
 
   const token = genToken();
   store.orders.push({
@@ -160,40 +301,57 @@ export async function createPayPalOrder(accountId) {
   };
 }
 
-export async function confirmPayment(token) {
-  const store = loadStore();
-  let order = store.orders.find(o => o.token === token);
-  if (!order) {
-    order = { id: genToken(), token, paid: false, createdAt: new Date().toISOString() };
-    store.orders.push(order);
+export async function confirmPayment(token, accountId, paypalOrderId) {
+  if (await backendOnline()) {
+    try {
+      const result = await apiFetch('/api/paypal/confirm', {
+        method: 'POST',
+        body: JSON.stringify({ token })
+      });
+      if (accountId && paypalOrderId) savePaidProof(accountId, token, paypalOrderId);
+      return result;
+    } catch { /* fallback */ }
   }
+
+  const store = loadStore();
+  const order = store.orders.find(o => o.token === token);
+  if (!order) throw new Error('Commande introuvable');
   order.paid = true;
   order.paidAt = new Date().toISOString();
   if (order.accountId) {
     const acc = store.accounts.find(a => a.id === order.accountId);
     if (acc) acc.sold = true;
+    if (accountId && paypalOrderId) savePaidProof(accountId, token, paypalOrderId);
   }
   saveStore(store);
   return { success: true, token: order.token };
 }
 
 export async function capturePayPalOrder(orderId, accountId) {
-  const store = loadStore();
-  const order = store.orders.find(o =>
-    (o.id === orderId || o.token === orderId) && o.accountId === accountId
-  );
-  if (!order) throw new Error('Commande introuvable');
-  order.paid = true;
-  order.paidAt = new Date().toISOString();
-  const acc = store.accounts.find(a => a.id === accountId);
-  if (acc) acc.sold = true;
-  saveStore(store);
-  return { token: order.token, success: true };
+  if (await backendOnline()) {
+    return apiFetch('/api/paypal/capture-order', {
+      method: 'POST',
+      body: JSON.stringify({ orderId, accountId })
+    });
+  }
+  return confirmPayment(orderId, accountId);
 }
 
 // ---- Admin ----
 
 export async function adminLogin(password) {
+  if (await backendOnline()) {
+    try {
+      const { token } = await apiFetch('/api/admin/login', {
+        method: 'POST',
+        body: JSON.stringify({ password })
+      });
+      setAdminToken(token);
+      return { token };
+    } catch (e) {
+      if (!e.message.includes('fetch')) throw e;
+    }
+  }
   const store = loadStore();
   if (password !== store.settings.adminPassword) {
     throw new Error('Mot de passe incorrect');
@@ -204,11 +362,31 @@ export async function adminLogin(password) {
 }
 
 export async function adminGetStore() {
+  if (await backendOnline()) {
+    try {
+      return await apiFetch('/api/admin/store');
+    } catch { /* fallback */ }
+  }
   ensureAdmin();
-  return loadStore();
+  const local = loadStore();
+  if (local.accounts.length) return local;
+  try {
+    return await fetchStaticStore();
+  } catch {
+    return local;
+  }
 }
 
 export async function adminSaveAccount(account) {
+  if (await backendOnline()) {
+    try {
+      const method = account.id ? 'PUT' : 'POST';
+      return await apiFetch('/api/admin/accounts', {
+        method,
+        body: JSON.stringify(account)
+      });
+    } catch { /* fallback */ }
+  }
   ensureAdmin();
   const store = loadStore();
   if (account.id) {
@@ -225,6 +403,11 @@ export async function adminSaveAccount(account) {
 }
 
 export async function adminDeleteAccount(id) {
+  if (await backendOnline()) {
+    try {
+      return await apiFetch(`/api/admin/accounts/${encodeURIComponent(id)}`, { method: 'DELETE' });
+    } catch { /* fallback */ }
+  }
   ensureAdmin();
   const store = loadStore();
   store.accounts = store.accounts.filter(a => a.id !== id);
@@ -233,14 +416,20 @@ export async function adminDeleteAccount(id) {
 }
 
 export async function adminSaveSettings(settings) {
+  if (await backendOnline()) {
+    try {
+      return await apiFetch('/api/admin/settings', {
+        method: 'PUT',
+        body: JSON.stringify(settings)
+      });
+    } catch { /* fallback */ }
+  }
   ensureAdmin();
   const store = loadStore();
   store.settings = { ...store.settings, ...settings };
   saveStore(store);
   return store.settings;
 }
-
-// ---- Export / Import (sauvegarde du catalogue) ----
 
 export function exportStore() {
   return loadStore();

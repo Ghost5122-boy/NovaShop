@@ -1,6 +1,6 @@
-import { getAccount, createPayPalOrder, confirmPayment, getPublicSettings } from './api.js?v=4';
-import { PAYPAL_ME } from './config.js?v=4';
-import { fetchPlayerTiers, getSkinUrl, startTierRefresh, tierValueClass, bestManualTier } from './tiers.js?v=4';
+import { getAccount, createPayPalOrder, confirmPayment, getPublicSettings } from './api.js?v=5';
+import { PAYPAL_ME } from './config.js?v=5';
+import { fetchPlayerTiers, getSkinUrl, startTierRefresh, tierValueClass, bestManualTier } from './tiers.js?v=5';
 
 const params = new URLSearchParams(window.location.search);
 const accountId = params.get('id');
@@ -9,6 +9,7 @@ const detailEl = document.getElementById('account-detail');
 const errorState = document.getElementById('error-state');
 
 let paypalSdkPromise = null;
+let loadedPayPalClientId = null;
 
 function renderTiersGrid(rankings) {
   if (!rankings?.length) {
@@ -43,9 +44,13 @@ function hasManualTiers(account) {
 }
 
 function loadPayPalSdk(clientId) {
-  if (paypalSdkPromise) return paypalSdkPromise;
+  if (window.paypal && loadedPayPalClientId === clientId) {
+    return Promise.resolve(window.paypal);
+  }
+  document.querySelectorAll('script[src*="paypal.com/sdk/js"]').forEach(el => el.remove());
+  delete window.paypal;
+  loadedPayPalClientId = clientId;
   paypalSdkPromise = new Promise((resolve, reject) => {
-    if (window.paypal) { resolve(window.paypal); return; }
     const s = document.createElement('script');
     s.src = `https://www.paypal.com/sdk/js?client-id=${encodeURIComponent(clientId)}&currency=EUR&intent=capture`;
     s.onload = () => resolve(window.paypal);
@@ -183,7 +188,10 @@ async function init() {
 
   try {
     const account = await getAccount(accountId);
-    const tierData = await fetchPlayerTiers(account.username);
+    let tierData = { rankings: [], bestTier: null };
+    try {
+      tierData = await fetchPlayerTiers(account.username);
+    } catch { /* tiers optionnels */ }
     loading.classList.add('hidden');
     detailEl.classList.remove('hidden');
     renderAccount(account, tierData);

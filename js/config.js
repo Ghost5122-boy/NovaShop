@@ -1,22 +1,33 @@
 /** Boutique publique (GitHub Pages) */
 export const SHOP_URL = 'https://ghost5122-boy.github.io/NovaShop/';
 
-/** Lien PayPal.me (affiché en secours si pas de Client ID) */
+/** API Render (livraison des identifiants après paiement). Laisse vide si indisponible. */
+export const BACKEND_URL = 'https://nova-shop.onrender.com';
+
+/** Lien PayPal.me (secours si le SDK ne charge pas) */
 export const PAYPAL_ME = 'NovaShop1733';
 
-/**
- * Client ID PayPal pour le paiement intégré (popup sur le site, façon Discord).
- * Laisse vide ici : il se règle dans l'admin → onglet Réglages.
- * Pour l'obtenir : https://developer.paypal.com → Apps & Credentials → Live → Create App → copier le Client ID.
- */
-export const PAYPAL_CLIENT_ID = 'Abn2711UEhUIemX3earI_';
+/** Client ID PayPal Live — paiement intégré sur le site (popup). */
+export const PAYPAL_CLIENT_ID =
+  'EBXwuM3xaBRRCirleypUqpMjYvF9jB-lo0QxgJS91NDjUbSjuoeT7UwngcbdKZvNgOEZM64N1BhtkQ';
 
-/** Admin (chemin relatif depuis la racine du site) */
 export function getAdminUrl() {
   return 'admin/';
 }
 
 export function getPayPalUrl(amount) {
-  const price = Number(amount).toFixed(2);
-  return `https://paypal.me/${PAYPAL_ME}/${price}`;
+  return `https://paypal.me/${PAYPAL_ME}/${Number(amount).toFixed(2)}`;
+}
+
+/** Racine du site (sous-dossier GitHub Pages ou /). */
+export function getSiteRoot() {
+  const parts = location.pathname.split('/').filter(Boolean);
+  if (parts.length && parts[0] !== 'index.html' && !parts[0].includes('.')) {
+    return `/${parts[0]}/`;
+  }
+  return '/';
+}
+
+export function dataUrl(file) {
+  return `${location.origin}${getSiteRoot()}data/${file}`;
 }

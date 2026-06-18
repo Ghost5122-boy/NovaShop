@@ -22,6 +22,16 @@ app.use(express.static(path.join(__dirname)));
 
 app.get('/health', (req, res) => res.json({ ok: true }));
 
+app.get('/api/settings/public', (req, res) => {
+  const store = readStore();
+  const s = store.settings;
+  res.json({
+    siteName: s.siteName || 'Nova Shop',
+    paypalMe: s.paypalMe || s.paypalEmail || 'NovaShop1733',
+    paypalClientId: s.paypalClientId || process.env.PAYPAL_CLIENT_ID || ''
+  });
+});
+
 function ensureDataFile() {
   if (!fs.existsSync(DATA_FILE)) {
     const dir = path.dirname(DATA_FILE);
