@@ -1,5 +1,5 @@
-import { getAccount, createPayPalOrder, confirmPayment, getPublicSettings } from './api.js?v=6';
-import { fetchPlayerTiers, getSkinUrl, startTierRefresh, tierValueClass, bestManualTier } from './tiers.js?v=6';
+import { getAccount, createPayPalOrder, confirmPayment, getPublicSettings } from './api.js?v=7';
+import { fetchPlayerTiers, getSkinUrl, startTierRefresh, tierValueClass, bestManualTier } from './tiers.js?v=7';
 
 const params = new URLSearchParams(window.location.search);
 const accountId = params.get('id');
@@ -89,6 +89,41 @@ function renderPayPalFallback(box, account, settings) {
 async function setupPayment(account) {
   const box = document.getElementById('payment-box');
   if (!box) return;
+
+  const price = Number(account.price) || 0;
+
+  // Compte gratuit : livraison directe sans PayPal.
+  if (price <= 0) {
+    box.innerHTML = `
+      <div class="payment-discord">
+        <div class="payment-discord-top">
+          <span class="payment-paypal-icon">🎁</span>
+          <div>
+            <strong>Compte gratuit</strong>
+            <p>Montant : <span class="payment-amount">0,00 €</span></p>
+          </div>
+        </div>
+        <button type="button" id="free-claim-btn" class="btn btn-primary" style="width:100%;margin-top:0.5rem">
+          Obtenir le compte gratuitement
+        </button>
+        <p id="pay-status" class="pay-status"></p>
+      </div>`;
+    document.getElementById('free-claim-btn').addEventListener('click', async () => {
+      const status = document.getElementById('pay-status');
+      const btn = document.getElementById('free-claim-btn');
+      btn.disabled = true;
+      status.textContent = 'Préparation de la livraison…';
+      try {
+        const order = await createPayPalOrder(account.id);
+        await confirmPayment(order.token, account.id, 'FREE');
+        window.location.href = `delivery.html?accountId=${encodeURIComponent(account.id)}&token=${encodeURIComponent(order.token)}`;
+      } catch (e) {
+        status.textContent = (e && e.message) || 'Erreur. Réessaie.';
+        btn.disabled = false;
+      }
+    });
+    return;
+  }
 
   box.innerHTML = `
     <div class="payment-discord">

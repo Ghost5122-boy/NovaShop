@@ -2,8 +2,8 @@ import {
   adminLogin, getAdminToken, setAdminToken,
   adminGetStore, adminSaveAccount, adminDeleteAccount, adminSaveSettings,
   exportStore, importStore
-} from './api.js?v=6';
-import { TIER_VALUES, tierValueClass } from './tiers.js?v=6';
+} from './api.js?v=7';
+import { TIER_VALUES, tierValueClass } from './tiers.js?v=7';
 
 let currentTiers = [];
 
@@ -180,10 +180,11 @@ document.addEventListener('keydown', (e) => {
 document.getElementById('account-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   const id = document.getElementById('acc-id').value;
+  const price = Math.max(0, parseFloat(document.getElementById('acc-price').value) || 0);
   const account = {
     id: id || undefined,
     username: document.getElementById('acc-username').value.trim(),
-    price: parseFloat(document.getElementById('acc-price').value),
+    price,
     email: document.getElementById('acc-email').value.trim(),
     password: document.getElementById('acc-password').value,
     description: document.getElementById('acc-description').value.trim(),
@@ -191,9 +192,13 @@ document.getElementById('account-form').addEventListener('submit', async (e) => 
     sold: document.getElementById('acc-sold').checked,
     tiers: currentTiers.map(t => ({ ...t }))
   };
-  await adminSaveAccount(account);
-  accountModal.classList.remove('active');
-  await loadStore();
+  try {
+    await adminSaveAccount(account);
+    accountModal.classList.remove('active');
+    await loadStore();
+  } catch (err) {
+    alert('Erreur : ' + (err.message || 'impossible de sauvegarder'));
+  }
 });
 
 document.getElementById('settings-form').addEventListener('submit', async (e) => {
@@ -214,8 +219,8 @@ document.getElementById('paypal-email').addEventListener('input', (e) => {
   document.getElementById('paypal-preview').textContent = e.target.value || 'NovaShop1733';
 });
 
-document.getElementById('export-btn').addEventListener('click', () => {
-  const data = exportStore();
+document.getElementById('export-btn').addEventListener('click', async () => {
+  const data = await exportStore();
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');

@@ -1,4 +1,4 @@
-﻿{
+{
   "settings": {
     "siteName": "Nova Shop",
     "paypalEmail": "NovaShop1733",
@@ -27,7 +27,23 @@
       "sold": false,
       "email": "dream@example.com",
       "password": "DreamPass456!"
+    },
+    {
+      "id": "acc-ddeb2668",
+      "username": "coldified",
+      "price": 0,
+      "email": "feur@gmail.com",
+      "password": "azeaze",
+      "description": "top 3 player",
+      "certified": true,
+      "sold": false,
+      "tiers": []
     }
   ],
-  "orders": []
+  "orders": [],
+  "sessions": {
+    "aee4a0d46d0d1297b29a2f5f1a64c10a2d9513962ce2bf8cb87c2d232cf64613": {
+      "loginAt": 1781822900033
+    }
+  }
 }

@@ -7,7 +7,7 @@ import {
   PAYPAL_CLIENT_ID,
   BACKEND_URL,
   dataUrl
-} from './config.js?v=6';
+} from './config.js?v=7';
 
 const STORE_KEY = 'nova_store_v2';
 const TOKEN_KEY = 'nova_admin_token';
@@ -129,6 +129,54 @@ async function fetchStaticStore() {
   return staticStore;
 }
 
+function invalidateStaticCache() {
+  staticCatalog = null;
+  staticStore = null;
+}
+
+/** Fusionne le catalogue déployé + les modifications admin (localStorage). */
+async function getMergedAccounts(includeSold = true) {
+  const local = loadStore();
+  let staticFull = [];
+  let staticPublic = [];
+
+  try {
+    const s = await fetchStaticStore();
+    staticFull = s.accounts || [];
+  } catch {
+    try {
+      staticPublic = await fetchStaticCatalog();
+      staticFull = staticPublic;
+    } catch { /* ignore */ }
+  }
+
+  if (!staticFull.length && staticPublic.length) staticFull = staticPublic;
+
+  const byId = new Map();
+  for (const a of staticFull) byId.set(a.id, clone(a));
+  for (const a of local.accounts) {
+    const prev = byId.get(a.id) || {};
+    byId.set(a.id, { ...prev, ...a });
+  }
+
+  let list = [...byId.values()];
+  if (!includeSold) list = list.filter(a => !a.sold);
+  return list;
+}
+
+async function findFullAccount(id) {
+  const acc = (await getMergedAccounts(true)).find(a => a.id === id);
+  if (!acc) throw new Error('Compte introuvable');
+  return acc;
+}
+
+function persistAccountsToLocal(accounts) {
+  const store = loadStore();
+  store.accounts = accounts;
+  saveStore(store);
+  invalidateStaticCache();
+}
+
 function savePaidProof(accountId, token, paypalOrderId) {
   sessionStorage.setItem(`${PAID_KEY}_${accountId}`, JSON.stringify({
     token,
@@ -189,20 +237,8 @@ export async function getAccounts() {
       return await apiFetch('/api/accounts');
     } catch { /* fallback */ }
   }
-  if (isGitHubPages()) {
-    const accounts = await fetchStaticCatalog();
-    return accounts.filter(a => !a.sold).map(publicAccount);
-  }
-  const store = loadStore();
-  if (store.accounts.length) {
-    return store.accounts.filter(a => !a.sold).map(publicAccount);
-  }
-  try {
-    const accounts = await fetchStaticCatalog();
-    return accounts.filter(a => !a.sold).map(publicAccount);
-  } catch {
-    return [];
-  }
+  const accounts = await getMergedAccounts(false);
+  return accounts.map(publicAccount);
 }
 
 export async function getAccount(id) {
@@ -211,19 +247,7 @@ export async function getAccount(id) {
       return await apiFetch(`/api/accounts/${encodeURIComponent(id)}`);
     } catch { /* fallback */ }
   }
-  if (isGitHubPages()) {
-    const accounts = await fetchStaticCatalog();
-    const acc = accounts.find(a => a.id === id);
-    if (!acc) throw new Error('Compte introuvable');
-    return publicAccount(acc);
-  }
-  const store = loadStore();
-  let acc = store.accounts.find(a => a.id === id);
-  if (!acc) {
-    const accounts = await fetchStaticCatalog();
-    acc = accounts.find(a => a.id === id);
-  }
-  if (!acc) throw new Error('Compte introuvable');
+  const acc = await findFullAccount(id);
   return publicAccount(acc);
 }
 
@@ -232,21 +256,13 @@ export async function getCredentials(id, orderToken) {
     return apiFetch(`/api/accounts/${encodeURIComponent(id)}/credentials?token=${encodeURIComponent(orderToken)}`);
   }
 
-  // La preuve n'est créée qu'après une capture PayPal réussie (status COMPLETED).
   const proof = getPaidProof(id);
   const localOrder = loadStore().orders.find(o => o.token === orderToken && o.accountId === id && o.paid);
   const paid = (proof && proof.token === orderToken) || !!localOrder;
   if (!paid) throw new Error('Paiement non confirmé');
 
-  // Identifiants : d'abord le store local, sinon le catalogue déployé (store.json).
-  let acc = loadStore().accounts.find(a => a.id === id && a.email);
-  if (!acc) {
-    try {
-      const remote = await fetchStaticStore();
-      acc = remote.accounts?.find(a => a.id === id);
-    } catch { /* ignore */ }
-  }
-  if (!acc?.email) throw new Error('Identifiants indisponibles. Contacte le vendeur.');
+  const acc = await findFullAccount(id);
+  if (!acc.email) throw new Error('Identifiants indisponibles. Contacte le vendeur.');
   return { username: acc.username, email: acc.email, password: acc.password };
 }
 
@@ -262,15 +278,13 @@ export async function createPayPalOrder(accountId) {
     } catch { /* fallback */ }
   }
 
-  const store = loadStore();
-  let acc = store.accounts.find(a => a.id === accountId);
-  if (!acc) {
-    const catalog = await fetchStaticCatalog().catch(() => []);
-    acc = catalog.find(a => a.id === accountId);
-    if (acc) store.accounts.push({ ...acc, email: '', password: '' });
-  }
-  if (!acc) throw new Error('Compte introuvable');
+  const acc = await findFullAccount(accountId);
   if (acc.sold) throw new Error('Ce compte est déjà vendu');
+
+  const store = loadStore();
+  const idx = store.accounts.findIndex(a => a.id === accountId);
+  if (idx >= 0) store.accounts[idx] = { ...store.accounts[idx], ...acc };
+  else store.accounts.push({ ...acc });
 
   const token = genToken();
   store.orders.push({
@@ -313,7 +327,7 @@ export async function confirmPayment(token, accountId, paypalOrderId) {
   if (order.accountId) {
     const acc = store.accounts.find(a => a.id === order.accountId);
     if (acc) acc.sold = true;
-    if (accountId && paypalOrderId) savePaidProof(accountId, token, paypalOrderId);
+    if (accountId) savePaidProof(accountId, token, paypalOrderId || 'FREE');
   }
   saveStore(store);
   return { success: true, token: order.token };
@@ -361,12 +375,12 @@ export async function adminGetStore() {
   }
   ensureAdmin();
   const local = loadStore();
-  if (local.accounts.length) return local;
-  try {
-    return await fetchStaticStore();
-  } catch {
-    return local;
-  }
+  const accounts = await getMergedAccounts(true);
+  return {
+    settings: local.settings,
+    accounts,
+    orders: local.orders || []
+  };
 }
 
 export async function adminSaveAccount(account) {
@@ -380,17 +394,19 @@ export async function adminSaveAccount(account) {
     } catch { /* fallback */ }
   }
   ensureAdmin();
-  const store = loadStore();
+  const merged = await getMergedAccounts(true);
+
   if (account.id) {
-    const idx = store.accounts.findIndex(a => a.id === account.id);
-    if (idx === -1) throw new Error('Compte introuvable');
-    store.accounts[idx] = { ...store.accounts[idx], ...account };
-    saveStore(store);
-    return store.accounts[idx];
+    const idx = merged.findIndex(a => a.id === account.id);
+    if (idx >= 0) merged[idx] = { ...merged[idx], ...account };
+    else merged.push({ ...account });
+    persistAccountsToLocal(merged);
+    return merged.find(a => a.id === account.id);
   }
+
   const newAcc = { ...account, id: genId(), sold: account.sold ?? false };
-  store.accounts.push(newAcc);
-  saveStore(store);
+  merged.push(newAcc);
+  persistAccountsToLocal(merged);
   return newAcc;
 }
 
@@ -401,9 +417,8 @@ export async function adminDeleteAccount(id) {
     } catch { /* fallback */ }
   }
   ensureAdmin();
-  const store = loadStore();
-  store.accounts = store.accounts.filter(a => a.id !== id);
-  saveStore(store);
+  const merged = (await getMergedAccounts(true)).filter(a => a.id !== id);
+  persistAccountsToLocal(merged);
   return { success: true };
 }
 
@@ -423,8 +438,10 @@ export async function adminSaveSettings(settings) {
   return store.settings;
 }
 
-export function exportStore() {
-  return loadStore();
+export async function exportStore() {
+  const local = loadStore();
+  const accounts = await getMergedAccounts(true);
+  return { settings: local.settings, accounts, orders: local.orders || [] };
 }
 
 export function importStore(data) {
@@ -436,5 +453,6 @@ export function importStore(data) {
     orders: store.orders
   };
   saveStore(merged);
+  invalidateStaticCache();
   return merged;
 }
