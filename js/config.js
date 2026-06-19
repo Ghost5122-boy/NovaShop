@@ -10,13 +10,9 @@ export const BACKEND_URL = '';
 /** Lien PayPal.me (secours si le SDK PayPal ne charge pas) */
 export const PAYPAL_ME = 'NovaShop1733';
 
-/**
- * Client ID PayPal Live — paiement intégré sur le site (popup).
- * IMPORTANT : c'est le « Client ID » (commence par "A..."), PAS le « Secret ».
- * À récupérer sur developer.paypal.com → Apps & Credentials → Live → ton app → Client ID.
- * Tant qu'il est vide ou invalide, le site bascule sur le paiement PayPal.me.
- */
-export const PAYPAL_CLIENT_ID = '';
+/** Client ID PayPal Live — paiement intégré sur le site (popup). */
+export const PAYPAL_CLIENT_ID =
+  'Abn2711UEhUIemX3earI_3zju9Ur_o8zHmw6d8Yi-YFr6NrezvulVkkjYH416lZTdtsaK6l0QlJIxxQX';
 
 export function getAdminUrl() {
   return 'admin/';

@@ -2,8 +2,8 @@ import {
   adminLogin, getAdminToken, setAdminToken,
   adminGetStore, adminSaveAccount, adminDeleteAccount, adminSaveSettings,
   exportStore, importStore
-} from './api.js?v=7';
-import { TIER_VALUES, tierValueClass } from './tiers.js?v=7';
+} from './api.js?v=8';
+import { TIER_VALUES, tierValueClass } from './tiers.js?v=8';
 
 let currentTiers = [];
 
