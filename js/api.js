@@ -10,7 +10,7 @@ import {
   GITHUB_OWNER,
   GITHUB_REPO,
   GITHUB_BRANCH
-} from './config.js?v=10';
+} from './config.js?v=11';
 
 const STORE_KEY = 'nova_store_v2';
 const TOKEN_KEY = 'nova_admin_token';
@@ -18,7 +18,7 @@ const PAID_KEY = 'nova_paid_proof';
 
 const DEFAULT_STORE = {
   settings: {
-    siteName: 'Nova Shop',
+    siteName: 'Nexus Market',
     paypalMe: PAYPAL_ME,
     paypalClientId: PAYPAL_CLIENT_ID,
     adminPassword: 'NovaShop1986*',
@@ -46,6 +46,10 @@ function loadStore() {
       if (!Array.isArray(store.orders)) store.orders = [];
       if (!store.settings.paypalMe) store.settings.paypalMe = PAYPAL_ME;
       if (!store.settings.paypalClientId) store.settings.paypalClientId = PAYPAL_CLIENT_ID;
+      if (store.settings.siteName === 'Nova Shop') {
+        store.settings.siteName = 'Nexus Market';
+        localStorage.setItem(STORE_KEY, JSON.stringify(store));
+      }
       return store;
     }
   } catch { /* store corrompu */ }
@@ -198,8 +202,8 @@ export async function publishCatalog() {
   const storeJson = JSON.stringify({ settings, accounts, orders: [] }, null, 2) + '\n';
   const publicJson = JSON.stringify({ accounts: accounts.map(publicAccount) }, null, 2) + '\n';
 
-  await githubPutFile(token, 'data/store.json', storeJson, 'Mise à jour catalogue Nova Shop');
-  await githubPutFile(token, 'data/accounts-public.json', publicJson, 'Mise à jour catalogue public Nova Shop');
+  await githubPutFile(token, 'data/store.json', storeJson, 'Mise à jour catalogue Nexus Market');
+  await githubPutFile(token, 'data/accounts-public.json', publicJson, 'Mise à jour catalogue public Nexus Market');
   invalidateStaticCache();
   return { success: true };
 }
@@ -300,7 +304,7 @@ export async function getPublicSettings() {
   }
   const s = loadStore().settings;
   return {
-    siteName: s.siteName || 'Nova Shop',
+    siteName: s.siteName || 'Nexus Market',
     paypalMe: s.paypalMe || PAYPAL_ME,
     paypalClientId: s.paypalClientId || PAYPAL_CLIENT_ID || ''
   };

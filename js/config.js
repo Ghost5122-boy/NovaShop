@@ -1,3 +1,6 @@
+/** Nom affiché du site */
+export const SITE_NAME = 'Nexus Market';
+
 /** Boutique publique (GitHub Pages) */
 export const SHOP_URL = 'https://ghost5122-boy.github.io/NovaShop/';
 

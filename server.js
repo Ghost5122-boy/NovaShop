@@ -26,7 +26,7 @@ app.get('/api/settings/public', (req, res) => {
   const store = readStore();
   const s = store.settings;
   res.json({
-    siteName: s.siteName || 'Nova Shop',
+    siteName: s.siteName || 'Nexus Market',
     paypalMe: s.paypalMe || s.paypalEmail || 'NexusMarket1733',
     paypalClientId: s.paypalClientId || process.env.PAYPAL_CLIENT_ID || ''
   });
@@ -201,6 +201,6 @@ if (process.env.VERCEL) {
 } else {
   const HOST = IS_CLOUD ? '0.0.0.0' : '127.0.0.1';
   app.listen(PORT, HOST, () => {
-    console.log(`Nova Shop actif sur le port ${PORT}`);
+    console.log(`Nexus Market actif sur le port ${PORT}`);
   });
 }

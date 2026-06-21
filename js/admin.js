@@ -2,8 +2,8 @@ import {
   adminLogin, getAdminToken, setAdminToken,
   adminGetStore, adminSaveAccount, adminDeleteAccount, adminSaveSettings,
   exportStore, importStore, publishCatalog
-} from './api.js?v=10';
-import { TIER_VALUES, tierValueClass } from './tiers.js?v=10';
+} from './api.js?v=11';
+import { TIER_VALUES, tierValueClass } from './tiers.js?v=11';
 
 let currentTiers = [];
 
@@ -91,7 +91,7 @@ function fillSettings() {
   const me = store.settings.paypalMe || store.settings.paypalEmail || 'NexusMarket1733';
   document.getElementById('paypal-email').value = me;
   document.getElementById('paypal-client').value = store.settings.paypalClientId || '';
-  document.getElementById('site-name').value = store.settings.siteName || 'Nova Shop';
+  document.getElementById('site-name').value = store.settings.siteName || 'Nexus Market';
   document.getElementById('admin-pass').value = store.settings.adminPassword || '';
   document.getElementById('github-token').value = store.settings.githubToken || '';
   const preview = document.getElementById('paypal-preview');

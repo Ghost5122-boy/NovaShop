@@ -1,4 +1,4 @@
-import { getCredentials } from './api.js?v=10';
+import { getCredentials } from './api.js?v=11';
 
 const params = new URLSearchParams(window.location.search);
 const accountId = params.get('accountId') || params.get('id');
