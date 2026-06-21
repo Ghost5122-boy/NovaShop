@@ -120,9 +120,32 @@
           </div>
 
           <div class="login-card" style="margin:0">
+            <h2 style="margin-bottom:0.75rem;color:var(--blue-800)">Publier pour tous les visiteurs</h2>
+            <p style="font-size:0.86rem;color:var(--text-muted);margin-bottom:1rem;line-height:1.5">
+              Pour que <strong>tout le monde</strong> voie tes nouveaux comptes et prix, publie le catalogue sur GitHub.
+              Une fois le token configuré, chaque sauvegarde publie automatiquement.
+            </p>
+            <div class="form-group">
+              <label for="github-token">Token GitHub (une seule fois)</label>
+              <input type="password" id="github-token" placeholder="ghp_... ou github_pat_...">
+              <p style="font-size:0.78rem;color:var(--text-muted);margin-top:0.35rem;line-height:1.45">
+                1. Va sur <a href="https://github.com/settings/tokens" target="_blank" rel="noopener">github.com/settings/tokens</a><br>
+                2. <strong>Generate new token</strong> → coche <strong>Contents: Read and write</strong><br>
+                3. Colle le token ici puis <strong>Sauvegarder</strong> (Réglages PayPal & site)
+              </p>
+            </div>
+            <button type="button" class="btn btn-primary" id="publish-btn" style="width:100%;margin-bottom:0.75rem">
+              Publier pour tous les visiteurs
+            </button>
+            <p style="font-size:0.78rem;color:var(--text-muted);text-align:center">
+              Déploiement ~2 min après publication
+            </p>
+          </div>
+
+          <div class="login-card" style="margin:0">
             <h2 style="margin-bottom:0.75rem;color:var(--blue-800)">Sauvegarde du catalogue</h2>
             <p style="font-size:0.86rem;color:var(--text-muted);margin-bottom:1.25rem">
-              Les comptes sont enregistrés dans ce navigateur. Exporte le fichier pour le sauvegarder ou le publier pour tes clients.
+              Exporte une copie de secours du catalogue (fichier JSON).
             </p>
             <button class="btn btn-outline" id="export-btn" style="width:100%;margin-bottom:0.75rem">Exporter (télécharger)</button>
             <label class="btn btn-outline" style="width:100%;text-align:center;cursor:pointer">
@@ -187,6 +210,6 @@
     </div>
   </div>
 
-  <script type="module" src="../js/admin.js?v=9"></script>
+  <script type="module" src="../js/admin.js?v=10"></script>
 </body>
 </html>

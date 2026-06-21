@@ -1,9 +1,9 @@
 import {
   adminLogin, getAdminToken, setAdminToken,
   adminGetStore, adminSaveAccount, adminDeleteAccount, adminSaveSettings,
-  exportStore, importStore
-} from './api.js?v=9';
-import { TIER_VALUES, tierValueClass } from './tiers.js?v=9';
+  exportStore, importStore, publishCatalog
+} from './api.js?v=10';
+import { TIER_VALUES, tierValueClass } from './tiers.js?v=10';
 
 let currentTiers = [];
 
@@ -93,8 +93,21 @@ function fillSettings() {
   document.getElementById('paypal-client').value = store.settings.paypalClientId || '';
   document.getElementById('site-name').value = store.settings.siteName || 'Nova Shop';
   document.getElementById('admin-pass').value = store.settings.adminPassword || '';
+  document.getElementById('github-token').value = store.settings.githubToken || '';
   const preview = document.getElementById('paypal-preview');
   if (preview) preview.textContent = me;
+}
+
+async function tryPublishCatalog(actionLabel = 'Sauvegarde') {
+  if (!store?.settings?.githubToken?.trim()) {
+    return `${actionLabel} locale OK. Pour que tout le monde voie les changements : Réglages → colle ton token GitHub → « Publier pour tous ».`;
+  }
+  try {
+    await publishCatalog();
+    return `${actionLabel} publiée ! Visible par tous dans ~2 minutes sur la boutique.`;
+  } catch (e) {
+    return `${actionLabel} locale OK, mais publication échouée : ${e.message}`;
+  }
 }
 
 function renderTierList() {
@@ -145,6 +158,7 @@ async function handleDelete(id) {
   if (!confirm('Supprimer ce compte ?')) return;
   await adminDeleteAccount(id);
   await loadStore();
+  alert(await tryPublishCatalog('Suppression'));
 }
 
 document.getElementById('login-form').addEventListener('submit', async (e) => {
@@ -196,6 +210,7 @@ document.getElementById('account-form').addEventListener('submit', async (e) => 
     await adminSaveAccount(account);
     accountModal.classList.remove('active');
     await loadStore();
+    alert(await tryPublishCatalog('Compte'));
   } catch (err) {
     alert('Erreur : ' + (err.message || 'impossible de sauvegarder'));
   }
@@ -209,14 +224,32 @@ document.getElementById('settings-form').addEventListener('submit', async (e) =>
     paypalMe: document.getElementById('paypal-email').value.trim(),
     paypalClientId: document.getElementById('paypal-client').value.trim(),
     siteName: document.getElementById('site-name').value.trim(),
+    githubToken: document.getElementById('github-token').value.trim(),
     ...(pass ? { adminPassword: pass } : {})
   });
-  alert('Réglages sauvegardés !');
   await loadStore();
+  alert(await tryPublishCatalog('Réglages'));
 });
 
 document.getElementById('paypal-email').addEventListener('input', (e) => {
   document.getElementById('paypal-preview').textContent = e.target.value || 'NexusMarket1733';
+});
+
+document.getElementById('publish-btn').addEventListener('click', async () => {
+  const btn = document.getElementById('publish-btn');
+  const token = document.getElementById('github-token').value.trim();
+  if (token) await adminSaveSettings({ githubToken: token });
+  btn.disabled = true;
+  btn.textContent = 'Publication…';
+  try {
+    await publishCatalog();
+    alert('Catalogue publié ! Visible par tous dans ~2 minutes.');
+  } catch (e) {
+    alert('Erreur : ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Publier pour tous les visiteurs';
+  }
 });
 
 document.getElementById('export-btn').addEventListener('click', async () => {

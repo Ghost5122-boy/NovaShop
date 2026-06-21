@@ -1,6 +1,14 @@
 /** Boutique publique (GitHub Pages) */
 export const SHOP_URL = 'https://ghost5122-boy.github.io/NovaShop/';
 
+/** Admin (même site) */
+export const ADMIN_URL = 'https://ghost5122-boy.github.io/NovaShop/admin/';
+
+/** Repo GitHub — publication du catalogue pour tous les visiteurs */
+export const GITHUB_OWNER = 'Ghost5122-boy';
+export const GITHUB_REPO = 'NovaShop';
+export const GITHUB_BRANCH = 'main';
+
 /**
  * Backend optionnel. Laisse VIDE : le site fonctionne 100% en autonome
  * (catalogue statique + localStorage). Aucune attente serveur = site rapide.

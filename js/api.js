@@ -6,8 +6,11 @@ import {
   PAYPAL_ME,
   PAYPAL_CLIENT_ID,
   BACKEND_URL,
-  dataUrl
-} from './config.js?v=9';
+  dataUrl,
+  GITHUB_OWNER,
+  GITHUB_REPO,
+  GITHUB_BRANCH
+} from './config.js?v=10';
 
 const STORE_KEY = 'nova_store_v2';
 const TOKEN_KEY = 'nova_admin_token';
@@ -112,21 +115,93 @@ async function apiFetch(path, opts = {}) {
   return res.json();
 }
 
-async function fetchStaticCatalog() {
-  if (staticCatalog) return staticCatalog;
-  const res = await fetch(dataUrl('accounts-public.json'), { cache: 'no-store' });
+async function fetchStaticCatalog(bust = false) {
+  if (staticCatalog && !bust) return staticCatalog;
+  const q = bust ? `?t=${Date.now()}` : '';
+  const res = await fetch(dataUrl('accounts-public.json') + q, { cache: 'no-store' });
   if (!res.ok) throw new Error('Catalogue indisponible');
   const data = await res.json();
   staticCatalog = data.accounts || [];
   return staticCatalog;
 }
 
-async function fetchStaticStore() {
-  if (staticStore) return staticStore;
-  const res = await fetch(dataUrl('store.json'), { cache: 'no-store' });
+async function fetchStaticStore(bust = false) {
+  if (staticStore && !bust) return staticStore;
+  const q = bust ? `?t=${Date.now()}` : '';
+  const res = await fetch(dataUrl('store.json') + q, { cache: 'no-store' });
   if (!res.ok) throw new Error('Données boutique indisponibles');
   staticStore = await res.json();
   return staticStore;
+}
+
+/** Comptes déployés sur GitHub Pages (visible par tous les visiteurs). */
+async function getDeployedAccounts(includeSold = true) {
+  invalidateStaticCache();
+  let list = [];
+  try {
+    const s = await fetchStaticStore(true);
+    list = s.accounts || [];
+  } catch {
+    list = await fetchStaticCatalog(true);
+  }
+  if (!includeSold) list = list.filter(a => !a.sold);
+  return list;
+}
+
+function toBase64Utf8(str) {
+  const bytes = new TextEncoder().encode(str);
+  let binary = '';
+  for (const b of bytes) binary += String.fromCharCode(b);
+  return btoa(binary);
+}
+
+async function githubPutFile(token, path, content, message) {
+  const apiUrl = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${path}`;
+  const headers = {
+    Authorization: `Bearer ${token}`,
+    Accept: 'application/vnd.github+json',
+    'Content-Type': 'application/json'
+  };
+
+  let sha = null;
+  const getRes = await fetch(`${apiUrl}?ref=${GITHUB_BRANCH}`, { headers });
+  if (getRes.ok) sha = (await getRes.json()).sha;
+
+  const body = {
+    message,
+    content: toBase64Utf8(content),
+    branch: GITHUB_BRANCH
+  };
+  if (sha) body.sha = sha;
+
+  const res = await fetch(apiUrl, { method: 'PUT', headers, body: JSON.stringify(body) });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || `Erreur GitHub (${res.status})`);
+  }
+  return res.json();
+}
+
+/** Publie le catalogue sur GitHub → visible par tous après ~2 min. */
+export async function publishCatalog() {
+  ensureAdmin();
+  const local = loadStore();
+  const token = local.settings.githubToken?.trim();
+  if (!token) {
+    throw new Error('Ajoute un token GitHub dans Réglages (section « Publier pour tous »).');
+  }
+
+  const accounts = await getMergedAccounts(true);
+  const settings = { ...local.settings };
+  delete settings.githubToken;
+
+  const storeJson = JSON.stringify({ settings, accounts, orders: [] }, null, 2) + '\n';
+  const publicJson = JSON.stringify({ accounts: accounts.map(publicAccount) }, null, 2) + '\n';
+
+  await githubPutFile(token, 'data/store.json', storeJson, 'Mise à jour catalogue Nova Shop');
+  await githubPutFile(token, 'data/accounts-public.json', publicJson, 'Mise à jour catalogue public Nova Shop');
+  invalidateStaticCache();
+  return { success: true };
 }
 
 function invalidateStaticCache() {
@@ -237,6 +312,9 @@ export async function getAccounts() {
       return await apiFetch('/api/accounts');
     } catch { /* fallback */ }
   }
+  if (isGitHubPages()) {
+    return (await getDeployedAccounts(false)).map(publicAccount);
+  }
   const accounts = await getMergedAccounts(false);
   return accounts.map(publicAccount);
 }
@@ -246,6 +324,11 @@ export async function getAccount(id) {
     try {
       return await apiFetch(`/api/accounts/${encodeURIComponent(id)}`);
     } catch { /* fallback */ }
+  }
+  if (isGitHubPages()) {
+    const acc = (await getDeployedAccounts(true)).find(a => a.id === id);
+    if (!acc) throw new Error('Compte introuvable');
+    return publicAccount(acc);
   }
   const acc = await findFullAccount(id);
   return publicAccount(acc);
@@ -261,8 +344,10 @@ export async function getCredentials(id, orderToken) {
   const paid = (proof && proof.token === orderToken) || !!localOrder;
   if (!paid) throw new Error('Paiement non confirmé');
 
-  const acc = await findFullAccount(id);
-  if (!acc.email) throw new Error('Identifiants indisponibles. Contacte le vendeur.');
+  const acc = isGitHubPages()
+    ? (await getDeployedAccounts(true)).find(a => a.id === id)
+    : await findFullAccount(id);
+  if (!acc?.email) throw new Error('Identifiants indisponibles. Contacte le vendeur.');
   return { username: acc.username, email: acc.email, password: acc.password };
 }
 
