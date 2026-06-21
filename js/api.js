@@ -10,8 +10,8 @@ import {
   GITHUB_OWNER,
   GITHUB_REPO,
   GITHUB_BRANCH
-} from './config.js?v=12';
-import { normalizeSiteName } from './branding.js?v=12';
+} from './config.js?v=13';
+import { normalizeSiteName } from './branding.js?v=13';
 
 const STORE_KEY = 'nova_store_v2';
 const TOKEN_KEY = 'nova_admin_token';
