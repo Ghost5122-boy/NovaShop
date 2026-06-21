@@ -52,6 +52,7 @@ function Send-File($response, $filePath) {
         ".svg"  = "image/svg+xml"
     }
     $response.StatusCode = 200
+    $response.Headers.Add("Cache-Control", "no-cache, no-store, must-revalidate")
     $response.ContentType = if ($types.ContainsKey($ext)) { $types[$ext] } else { "application/octet-stream" }
     $bytes = [System.IO.File]::ReadAllBytes($filePath)
     $response.ContentLength64 = $bytes.Length
@@ -95,7 +96,7 @@ $listener.Start()
 
 Write-Host ""
 Write-Host "  ========================================" -ForegroundColor Green
-Write-Host "       NOVA SHOP - Serveur demarre !" -ForegroundColor Green
+Write-Host "       NEXUS MARKET - Serveur demarre !" -ForegroundColor Green
 Write-Host "  ========================================" -ForegroundColor Green
 Write-Host ""
 Write-Host "  Site:   http://localhost:$Port" -ForegroundColor Cyan

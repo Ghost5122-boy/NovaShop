@@ -2,7 +2,7 @@ import { SITE_NAME } from './config.js?v=12';
 
 export function normalizeSiteName(name) {
   const n = String(name || SITE_NAME).trim();
-  if (!n || /^nova\s*shop$/i.test(n)) return SITE_NAME;
+  if (!n || /nova\s*shop/i.test(n)) return SITE_NAME;
   return n;
 }
 
