@@ -7,7 +7,7 @@ import {
   PAYPAL_CLIENT_ID,
   BACKEND_URL,
   dataUrl
-} from './config.js?v=8';
+} from './config.js?v=9';
 
 const STORE_KEY = 'nova_store_v2';
 const TOKEN_KEY = 'nova_admin_token';

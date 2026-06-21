@@ -8,11 +8,11 @@ export const SHOP_URL = 'https://ghost5122-boy.github.io/NovaShop/';
 export const BACKEND_URL = '';
 
 /** Lien PayPal.me (secours si le SDK PayPal ne charge pas) */
-export const PAYPAL_ME = 'NovaShop1733';
+export const PAYPAL_ME = 'NexusMarket1733';
 
 /** Client ID PayPal Live — paiement intégré sur le site (popup). */
 export const PAYPAL_CLIENT_ID =
-  'Abn2711UEhUIemX3earI_3zju9Ur_o8zHmw6d8Yi-YFr6NrezvulVkkjYH416lZTdtsaK6l0QlJIxxQX';
+  'AZiTIxB8vNgL9pxrwrs9FaeURfrhE5FJGKCscmu2ZniZDGaC6-NjsrlDTl2ySu0TTxxYU37OZqJqZdQW';
 
 export function getAdminUrl() {
   return 'admin/';

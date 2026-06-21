@@ -2,8 +2,8 @@ import {
   adminLogin, getAdminToken, setAdminToken,
   adminGetStore, adminSaveAccount, adminDeleteAccount, adminSaveSettings,
   exportStore, importStore
-} from './api.js?v=8';
-import { TIER_VALUES, tierValueClass } from './tiers.js?v=8';
+} from './api.js?v=9';
+import { TIER_VALUES, tierValueClass } from './tiers.js?v=9';
 
 let currentTiers = [];
 
@@ -88,7 +88,7 @@ function renderOrders() {
 }
 
 function fillSettings() {
-  const me = store.settings.paypalMe || store.settings.paypalEmail || 'NovaShop1733';
+  const me = store.settings.paypalMe || store.settings.paypalEmail || 'NexusMarket1733';
   document.getElementById('paypal-email').value = me;
   document.getElementById('paypal-client').value = store.settings.paypalClientId || '';
   document.getElementById('site-name').value = store.settings.siteName || 'Nova Shop';
@@ -216,7 +216,7 @@ document.getElementById('settings-form').addEventListener('submit', async (e) =>
 });
 
 document.getElementById('paypal-email').addEventListener('input', (e) => {
-  document.getElementById('paypal-preview').textContent = e.target.value || 'NovaShop1733';
+  document.getElementById('paypal-preview').textContent = e.target.value || 'NexusMarket1733';
 });
 
 document.getElementById('export-btn').addEventListener('click', async () => {

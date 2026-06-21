@@ -1,9 +1,9 @@
 {
   "settings": {
     "siteName": "Nova Shop",
-    "paypalEmail": "NovaShop1733",
-    "paypalMe": "NovaShop1733",
-    "paypalClientId": "Abn2711UEhUIemX3earI_3zju9Ur_o8zHmw6d8Yi-YFr6NrezvulVkkjYH416lZTdtsaK6l0QlJIxxQX",
+    "paypalEmail": "NexusMarket1733",
+    "paypalMe": "NexusMarket1733",
+    "paypalClientId": "AZiTIxB8vNgL9pxrwrs9FaeURfrhE5FJGKCscmu2ZniZDGaC6-NjsrlDTl2ySu0TTxxYU37OZqJqZdQW",
     "currency": "EUR",
     "adminPassword": "NovaShop1986*"
   },

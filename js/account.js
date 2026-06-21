@@ -1,5 +1,5 @@
-import { getAccount, createPayPalOrder, confirmPayment, getPublicSettings } from './api.js?v=8';
-import { fetchPlayerTiers, getSkinUrl, startTierRefresh, tierValueClass, bestManualTier } from './tiers.js?v=8';
+import { getAccount, createPayPalOrder, confirmPayment, getPublicSettings } from './api.js?v=9';
+import { fetchPlayerTiers, getSkinUrl, startTierRefresh, tierValueClass, bestManualTier } from './tiers.js?v=9';
 
 const params = new URLSearchParams(window.location.search);
 const accountId = params.get('id');
