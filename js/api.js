@@ -10,7 +10,8 @@ import {
   GITHUB_OWNER,
   GITHUB_REPO,
   GITHUB_BRANCH
-} from './config.js?v=11';
+} from './config.js?v=12';
+import { normalizeSiteName } from './branding.js?v=12';
 
 const STORE_KEY = 'nova_store_v2';
 const TOKEN_KEY = 'nova_admin_token';
@@ -46,8 +47,9 @@ function loadStore() {
       if (!Array.isArray(store.orders)) store.orders = [];
       if (!store.settings.paypalMe) store.settings.paypalMe = PAYPAL_ME;
       if (!store.settings.paypalClientId) store.settings.paypalClientId = PAYPAL_CLIENT_ID;
-      if (store.settings.siteName === 'Nova Shop') {
-        store.settings.siteName = 'Nexus Market';
+      const fixedName = normalizeSiteName(store.settings.siteName);
+      if (store.settings.siteName !== fixedName) {
+        store.settings.siteName = fixedName;
         localStorage.setItem(STORE_KEY, JSON.stringify(store));
       }
       return store;
@@ -304,7 +306,7 @@ export async function getPublicSettings() {
   }
   const s = loadStore().settings;
   return {
-    siteName: s.siteName || 'Nexus Market',
+    siteName: normalizeSiteName(s.siteName),
     paypalMe: s.paypalMe || PAYPAL_ME,
     paypalClientId: s.paypalClientId || PAYPAL_CLIENT_ID || ''
   };

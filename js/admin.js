@@ -2,8 +2,11 @@ import {
   adminLogin, getAdminToken, setAdminToken,
   adminGetStore, adminSaveAccount, adminDeleteAccount, adminSaveSettings,
   exportStore, importStore, publishCatalog
-} from './api.js?v=11';
-import { TIER_VALUES, tierValueClass } from './tiers.js?v=11';
+} from './api.js?v=12';
+import { TIER_VALUES, tierValueClass } from './tiers.js?v=12';
+import { applySiteBranding } from './branding.js?v=12';
+
+applySiteBranding('Nexus Market', { admin: true });
 
 let currentTiers = [];
 
@@ -96,6 +99,7 @@ function fillSettings() {
   document.getElementById('github-token').value = store.settings.githubToken || '';
   const preview = document.getElementById('paypal-preview');
   if (preview) preview.textContent = me;
+  applySiteBranding(store.settings.siteName, { admin: true });
 }
 
 async function tryPublishCatalog(actionLabel = 'Sauvegarde') {
