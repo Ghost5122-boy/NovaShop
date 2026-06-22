@@ -9,9 +9,10 @@ import {
   dataUrl,
   GITHUB_OWNER,
   GITHUB_REPO,
-  GITHUB_BRANCH
-} from './config.js?v=14';
-import { normalizeSiteName } from './branding.js?v=14';
+  GITHUB_BRANCH,
+  SITE_NAME
+} from './config.js?v=15';
+import { normalizeSiteName } from './branding.js?v=15';
 
 const STORE_KEY = 'nova_store_v2';
 const TOKEN_KEY = 'nova_admin_token';
@@ -41,7 +42,7 @@ function migratePayPalSettings(store) {
   let dirty = false;
   const s = store.settings;
   const me = String(s.paypalMe || s.paypalEmail || '').trim();
-  if (!me || /^novashop/i.test(me)) {
+  if (!me || /nova\s*shop/i.test(me)) {
     s.paypalMe = PAYPAL_ME;
     s.paypalEmail = PAYPAL_ME;
     dirty = true;
@@ -317,24 +318,27 @@ function ensureAdmin() {
 export async function getPublicSettings() {
   if (await backendOnline()) {
     try {
-      return await apiFetch('/api/settings/public');
-    } catch { /* fallback */ }
-  }
-  if (isGitHubPages()) {
-    try {
-      const s = (await fetchStaticStore()).settings || {};
+      const remote = await apiFetch('/api/settings/public');
       return {
-        siteName: normalizeSiteName(s.siteName),
-        paypalMe: s.paypalMe || s.paypalEmail || PAYPAL_ME,
-        paypalClientId: s.paypalClientId || PAYPAL_CLIENT_ID || ''
+        siteName: normalizeSiteName(remote.siteName),
+        paypalMe: PAYPAL_ME,
+        paypalClientId: PAYPAL_CLIENT_ID
       };
     } catch { /* fallback */ }
   }
-  const s = loadStore().settings;
+  let siteName = SITE_NAME;
+  if (isGitHubPages()) {
+    try {
+      const s = (await fetchStaticStore()).settings || {};
+      siteName = normalizeSiteName(s.siteName);
+    } catch { /* garde défaut */ }
+  } else {
+    siteName = normalizeSiteName(loadStore().settings.siteName);
+  }
   return {
-    siteName: normalizeSiteName(s.siteName),
-    paypalMe: s.paypalMe || s.paypalEmail || PAYPAL_ME,
-    paypalClientId: s.paypalClientId || PAYPAL_CLIENT_ID || ''
+    siteName,
+    paypalMe: PAYPAL_ME,
+    paypalClientId: PAYPAL_CLIENT_ID
   };
 }
 
@@ -414,12 +418,11 @@ export async function createPayPalOrder(accountId) {
   });
   saveStore(store);
 
-  const me = store.settings.paypalMe || PAYPAL_ME;
   return {
     orderId: store.orders.at(-1).id,
     token,
     amount: acc.price,
-    paypalLink: `https://paypal.me/${me}/${acc.price.toFixed(2)}`,
+    paypalLink: `https://paypal.me/${PAYPAL_ME}/${acc.price.toFixed(2)}`,
     approvalUrl: null
   };
 }

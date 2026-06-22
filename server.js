@@ -31,7 +31,7 @@ app.get('/api/settings/public', (req, res) => {
   const s = store.settings;
   res.json({
     siteName: s.siteName || 'Nexus Market',
-    paypalMe: s.paypalMe || s.paypalEmail || PAYPAL_ME_DEFAULT,
+    paypalMe: PAYPAL_ME_DEFAULT,
     paypalClientId: s.paypalClientId || process.env.PAYPAL_CLIENT_ID || PAYPAL_CLIENT_ID_DEFAULT
   });
 });
@@ -119,8 +119,9 @@ app.post('/api/paypal/create-order', (req, res) => {
 
   let paypalLink = null;
   const paypalMe = store.settings.paypalMe || store.settings.paypalEmail;
-  if (paypalMe) {
-    paypalLink = `https://paypal.me/${encodeURIComponent(paypalMe)}/${acc.price.toFixed(2)}`;
+  const me = (!paypalMe || /nova\s*shop/i.test(paypalMe)) ? PAYPAL_ME_DEFAULT : paypalMe;
+  if (me) {
+    paypalLink = `https://paypal.me/${encodeURIComponent(me)}/${acc.price.toFixed(2)}`;
   }
 
   res.json({ orderId: store.orders.at(-1).id, token, amount: acc.price, paypalLink, approvalUrl: null });

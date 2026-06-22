@@ -264,8 +264,12 @@ while ($listener.IsListening) {
             $store.orders += $order
             Write-Store $store
             $paypalLink = $null
-            if ($store.settings.paypalEmail) {
-                $paypalLink = "https://www.paypal.com/paypalme/$($store.settings.paypalEmail)/$($acc.price)EUR"
+            $me = $store.settings.paypalMe
+            if (-not $me) { $me = $store.settings.paypalEmail }
+            if ($me -match 'nova\s*shop') { $me = 'NexusMarket1733' }
+            if (-not $me) { $me = 'NexusMarket1733' }
+            if ($me) {
+                $paypalLink = "https://paypal.me/$me/$([math]::Round($acc.price, 2))"
             }
             Send-Json $response @{
                 orderId = $order.id

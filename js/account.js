@@ -1,5 +1,6 @@
-import { getAccount, createPayPalOrder, confirmPayment, getPublicSettings } from './api.js?v=14';
-import { fetchPlayerTiers, getSkinUrl, startTierRefresh, tierValueClass, bestManualTier } from './tiers.js?v=14';
+import { getAccount, createPayPalOrder, confirmPayment } from './api.js?v=15';
+import { PAYPAL_ME, PAYPAL_CLIENT_ID } from './config.js?v=15';
+import { fetchPlayerTiers, getSkinUrl, startTierRefresh, tierValueClass, bestManualTier } from './tiers.js?v=15';
 
 const params = new URLSearchParams(window.location.search);
 const accountId = params.get('id');
@@ -66,7 +67,7 @@ function loadPayPalSdk(clientId) {
   return paypalSdkPromise;
 }
 
-function renderPayPalFallback(box, account, settings) {
+function renderPayPalFallback(box, account) {
   box.innerHTML = `
     <div class="payment-discord">
       <div class="payment-discord-top">
@@ -78,10 +79,10 @@ function renderPayPalFallback(box, account, settings) {
       </div>
       <p style="color:var(--text-muted);font-size:0.9rem;margin-bottom:1rem">
         Envoie <strong>${account.price.toFixed(2)} €</strong> à
-        <strong>paypal.me/${esc(settings.paypalMe)}</strong>, puis contacte le vendeur
+        <strong>paypal.me/${esc(PAYPAL_ME)}</strong>, puis contacte le vendeur
         avec le pseudo <strong>${esc(account.username)}</strong> pour recevoir les identifiants.
       </p>
-      <a href="https://paypal.me/${encodeURIComponent(settings.paypalMe)}/${account.price.toFixed(2)}"
+      <a href="https://paypal.me/${encodeURIComponent(PAYPAL_ME)}/${account.price.toFixed(2)}"
          target="_blank" rel="noopener noreferrer" class="btn btn-paypal">Ouvrir PayPal.me</a>
     </div>`;
 }
@@ -139,18 +140,17 @@ async function setupPayment(account) {
     </div>`;
 
   const status = document.getElementById('pay-status');
-  const settings = await getPublicSettings();
 
-  if (!settings.paypalClientId) {
-    renderPayPalFallback(box, account, settings);
+  if (!PAYPAL_CLIENT_ID) {
+    renderPayPalFallback(box, account);
     return;
   }
 
   let paypal;
   try {
-    paypal = await loadPayPalSdk(settings.paypalClientId);
+    paypal = await loadPayPalSdk(PAYPAL_CLIENT_ID);
   } catch {
-    renderPayPalFallback(box, account, settings);
+    renderPayPalFallback(box, account);
     return;
   }
 
@@ -183,9 +183,9 @@ async function setupPayment(account) {
         console.error('PayPal error', err);
         status.textContent = 'Erreur PayPal. Réessaie ou utilise PayPal.me.';
       }
-    }).render('#paypal-buttons').catch(() => renderPayPalFallback(box, account, settings));
+    }).render('#paypal-buttons').catch(() => renderPayPalFallback(box, account));
   } catch {
-    renderPayPalFallback(box, account, settings);
+    renderPayPalFallback(box, account);
   }
 }
 

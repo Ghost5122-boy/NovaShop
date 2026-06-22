@@ -2,9 +2,9 @@ import {
   adminLogin, getAdminToken, setAdminToken,
   adminGetStore, adminSaveAccount, adminDeleteAccount, adminSaveSettings,
   exportStore, importStore, publishCatalog
-} from './api.js?v=14';
-import { TIER_VALUES, tierValueClass } from './tiers.js?v=14';
-import { applySiteBranding } from './branding.js?v=14';
+} from './api.js?v=15';
+import { TIER_VALUES, tierValueClass } from './tiers.js?v=15';
+import { applySiteBranding } from './branding.js?v=15';
 
 applySiteBranding('Nexus Market', { admin: true });
 
