@@ -10,8 +10,8 @@ import {
   GITHUB_OWNER,
   GITHUB_REPO,
   GITHUB_BRANCH
-} from './config.js?v=13';
-import { normalizeSiteName } from './branding.js?v=13';
+} from './config.js?v=14';
+import { normalizeSiteName } from './branding.js?v=14';
 
 const STORE_KEY = 'nova_store_v2';
 const TOKEN_KEY = 'nova_admin_token';
@@ -37,6 +37,24 @@ function clone(obj) {
   return JSON.parse(JSON.stringify(obj));
 }
 
+function migratePayPalSettings(store) {
+  let dirty = false;
+  const s = store.settings;
+  const me = String(s.paypalMe || s.paypalEmail || '').trim();
+  if (!me || /^novashop/i.test(me)) {
+    s.paypalMe = PAYPAL_ME;
+    s.paypalEmail = PAYPAL_ME;
+    dirty = true;
+  }
+  const cid = String(s.paypalClientId || '').trim();
+  if (!cid || cid.length < 50) {
+    s.paypalClientId = PAYPAL_CLIENT_ID;
+    dirty = true;
+  }
+  if (dirty) saveStore(store);
+  return store;
+}
+
 function loadStore() {
   try {
     const raw = localStorage.getItem(STORE_KEY);
@@ -45,14 +63,12 @@ function loadStore() {
       if (!store.settings) store.settings = clone(DEFAULT_STORE.settings);
       if (!Array.isArray(store.accounts)) store.accounts = [];
       if (!Array.isArray(store.orders)) store.orders = [];
-      if (!store.settings.paypalMe) store.settings.paypalMe = PAYPAL_ME;
-      if (!store.settings.paypalClientId) store.settings.paypalClientId = PAYPAL_CLIENT_ID;
       const fixedName = normalizeSiteName(store.settings.siteName);
       if (store.settings.siteName !== fixedName) {
         store.settings.siteName = fixedName;
         localStorage.setItem(STORE_KEY, JSON.stringify(store));
       }
-      return store;
+      return migratePayPalSettings(store);
     }
   } catch { /* store corrompu */ }
   const seed = clone(DEFAULT_STORE);
@@ -304,10 +320,20 @@ export async function getPublicSettings() {
       return await apiFetch('/api/settings/public');
     } catch { /* fallback */ }
   }
+  if (isGitHubPages()) {
+    try {
+      const s = (await fetchStaticStore()).settings || {};
+      return {
+        siteName: normalizeSiteName(s.siteName),
+        paypalMe: s.paypalMe || s.paypalEmail || PAYPAL_ME,
+        paypalClientId: s.paypalClientId || PAYPAL_CLIENT_ID || ''
+      };
+    } catch { /* fallback */ }
+  }
   const s = loadStore().settings;
   return {
     siteName: normalizeSiteName(s.siteName),
-    paypalMe: s.paypalMe || PAYPAL_ME,
+    paypalMe: s.paypalMe || s.paypalEmail || PAYPAL_ME,
     paypalClientId: s.paypalClientId || PAYPAL_CLIENT_ID || ''
   };
 }

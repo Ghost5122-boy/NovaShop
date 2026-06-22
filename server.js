@@ -22,13 +22,17 @@ app.use(express.static(path.join(__dirname)));
 
 app.get('/health', (req, res) => res.json({ ok: true }));
 
+const PAYPAL_ME_DEFAULT = 'NexusMarket1733';
+const PAYPAL_CLIENT_ID_DEFAULT =
+  'AZiTIxB8vNgL9pxrwrs9FaeURfrhE5FJGKCscmu2ZniZDGaC6-NjsrlDTl2ySu0TTxxYU37OZqJqZdQW';
+
 app.get('/api/settings/public', (req, res) => {
   const store = readStore();
   const s = store.settings;
   res.json({
     siteName: s.siteName || 'Nexus Market',
-    paypalMe: s.paypalMe || s.paypalEmail || 'NexusMarket1733',
-    paypalClientId: s.paypalClientId || process.env.PAYPAL_CLIENT_ID || ''
+    paypalMe: s.paypalMe || s.paypalEmail || PAYPAL_ME_DEFAULT,
+    paypalClientId: s.paypalClientId || process.env.PAYPAL_CLIENT_ID || PAYPAL_CLIENT_ID_DEFAULT
   });
 });
 
