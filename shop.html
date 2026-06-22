@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Boutique — Nexus Market</title>
+  <script src="js/branding-inline.js?v=18"></script>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <nav class="navbar">
+    <a href="index.html" class="logo">
+      <span class="logo-icon">NM</span>
+      Nexus Market
+    </a>
+    <ul class="nav-links">
+      <li><a href="index.html">Accueil</a></li>
+      <li><a href="shop.html" class="active">Boutique</a></li>
+      <li><a href="#" data-admin-link class="nav-admin">Admin</a></li>
+    </ul>
+    <a href="shop.html" class="btn btn-primary">Boutique</a>
+  </nav>
+
+  <main class="shop-page">
+    <div class="shop-header">
+      <h1>Comptes disponibles</h1>
+      <p>Clique sur un profil pour voir le détail et acheter</p>
+    </div>
+
+    <div id="loading" class="loading">
+      <div class="spinner"></div>
+      Chargement des comptes...
+    </div>
+
+    <div id="shop-content" class="hidden">
+      <div class="shop-carousel-wrapper">
+        <div class="shop-carousel" id="carousel"></div>
+      </div>
+      <div class="carousel-nav">
+        <button class="carousel-btn" id="scroll-left" aria-label="Précédent">‹</button>
+        <button class="carousel-btn" id="scroll-right" aria-label="Suivant">›</button>
+      </div>
+    </div>
+
+    <div id="empty-state" class="empty-state hidden">
+      <p>Aucun compte disponible pour le moment. Revenez bientôt !</p>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <p>&copy; 2026 Nexus Market · <a href="#" data-admin-link class="admin-link">Administration</a></p>
+  </footer>
+
+  <script type="module" src="js/shop.js?v=18"></script>
+  <script type="module" src="js/site.js?v=18"></script>
+</body>
+</html>

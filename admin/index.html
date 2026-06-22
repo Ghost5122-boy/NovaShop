@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin — Nexus Market</title>
+  <script src="../js/branding-inline.js?v=18"></script>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+  <div id="login-view" class="admin-login">
+    <div class="login-card">
+      <span class="logo-icon" style="margin-bottom:1rem">NM</span>
+      <h1>Admin Nexus Market</h1>
+      <p style="color:var(--text-muted);margin-bottom:1.25rem">Connexion requise</p>
+      <form id="login-form">
+        <div class="form-group">
+          <label for="password">Mot de passe</label>
+          <input type="password" id="password" required placeholder="Mot de passe admin" autocomplete="current-password">
+        </div>
+        <button type="submit" class="btn btn-primary" style="width:100%">Connexion</button>
+      </form>
+      <p id="login-error" style="color:#dc2626;text-align:center;margin-top:1rem;display:none"></p>
+      <p style="margin-top:1.25rem;font-size:0.82rem;color:var(--text-muted);text-align:center">
+        PayPal : <strong>paypal.me/NexusMarket1733</strong>
+      </p>
+    </div>
+  </div>
+
+  <div id="admin-view" class="hidden">
+    <nav class="navbar">
+      <a href="../index.html" class="logo">
+        <span class="logo-icon">NM</span>
+        Nexus Market Admin
+      </a>
+      <div style="display:flex;gap:0.6rem;align-items:center">
+        <a href="../shop.html" class="btn btn-outline">Boutique</a>
+        <button class="btn btn-outline" id="logout-btn">Déconnexion</button>
+      </div>
+    </nav>
+
+    <main class="admin-panel">
+      <div class="admin-header">
+        <h1>Panneau d'administration</h1>
+        <button class="btn btn-primary" id="add-account-btn">+ Ajouter un compte</button>
+      </div>
+
+      <div class="admin-tabs">
+        <button class="tab-btn active" data-tab="accounts">Comptes</button>
+        <button class="tab-btn" data-tab="orders">Ventes</button>
+        <button class="tab-btn" data-tab="settings">Réglages</button>
+      </div>
+
+      <div id="tab-accounts">
+        <div class="admin-table-wrap">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Pseudo</th>
+                <th>Prix</th>
+                <th>Email</th>
+                <th>Certifié</th>
+                <th>Statut</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="accounts-table"></tbody>
+          </table>
+        </div>
+        <p id="accounts-empty" class="admin-empty hidden">Aucun compte. Clique sur « + Ajouter un compte ».</p>
+      </div>
+
+      <div id="tab-orders" class="hidden">
+        <div class="admin-table-wrap">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Compte</th>
+                <th>Montant</th>
+                <th>Statut</th>
+              </tr>
+            </thead>
+            <tbody id="orders-table"></tbody>
+          </table>
+        </div>
+        <p id="orders-empty" class="admin-empty hidden">Aucune vente pour le moment.</p>
+      </div>
+
+      <div id="tab-settings" class="hidden">
+        <div class="settings-grid">
+          <div class="login-card" style="margin:0">
+            <h2 style="margin-bottom:1.25rem;color:var(--blue-800)">PayPal & site</h2>
+            <form id="settings-form">
+            <div class="form-group">
+              <label for="paypal-client">PayPal Client ID (paiement sur le site)</label>
+              <input type="text" id="paypal-client" placeholder="Colle ici ton Client ID PayPal" value="AZiTIxB8vNgL9pxrwrs9FaeURfrhE5FJGKCscmu2ZniZDGaC6-NjsrlDTl2ySu0TTxxYU37OZqJqZdQW">
+              <p style="font-size:0.8rem;color:var(--text-muted);margin-top:0.35rem;line-height:1.5">
+                Pour payer directement sur le site (popup, façon Discord).<br>
+                1. Va sur <strong>developer.paypal.com</strong> → connecte-toi<br>
+                2. <strong>Apps &amp; Credentials</strong> → onglet <strong>Live</strong> → <strong>Create App</strong><br>
+                3. Copie le <strong>Client ID</strong> et colle-le ici.<br>
+                Sans ça, le paiement se fait via le lien PayPal.me.
+              </p>
+            </div>
+            <div class="form-group">
+              <label for="paypal-email">Nom PayPal.me (secours)</label>
+              <input type="text" id="paypal-email" placeholder="NexusMarket1733" value="NexusMarket1733">
+              <p style="font-size:0.8rem;color:var(--text-muted);margin-top:0.35rem">Lien : paypal.me/<span id="paypal-preview">NexusMarket1733</span></p>
+            </div>
+            <div class="form-group">
+              <label for="site-name">Nom du site</label>
+              <input type="text" id="site-name" value="Nexus Market">
+            </div>
+            <div class="form-group">
+              <label for="admin-pass">Mot de passe admin</label>
+              <input type="text" id="admin-pass" placeholder="Mot de passe">
+            </div>
+            <button type="submit" class="btn btn-primary">Sauvegarder</button>
+            </form>
+          </div>
+
+          <div class="login-card" style="margin:0">
+            <h2 style="margin-bottom:0.75rem;color:var(--blue-800)">Synchronisation</h2>
+            <p style="font-size:0.86rem;color:var(--text-muted);margin-bottom:1rem;line-height:1.5">
+              Le catalogue se publie <strong>automatiquement</strong> à chaque sauvegarde.
+              Visible par tous en ~1 minute.
+            </p>
+            <button type="button" class="btn btn-primary" id="publish-btn" style="width:100%;margin-bottom:0.75rem">
+              Publier maintenant pour tous
+            </button>
+          </div>
+
+          <div class="login-card" style="margin:0">
+            <h2 style="margin-bottom:0.75rem;color:var(--blue-800)">Sauvegarde du catalogue</h2>
+            <p style="font-size:0.86rem;color:var(--text-muted);margin-bottom:1.25rem">
+              Exporte une copie de secours du catalogue (fichier JSON).
+            </p>
+            <button class="btn btn-outline" id="export-btn" style="width:100%;margin-bottom:0.75rem">Exporter (télécharger)</button>
+            <label class="btn btn-outline" style="width:100%;text-align:center;cursor:pointer">
+              Importer un fichier
+              <input type="file" id="import-input" accept="application/json" hidden>
+            </label>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <div class="modal" id="account-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="modal-title">Ajouter un compte</h2>
+        <button class="modal-close" id="modal-close">&times;</button>
+      </div>
+      <form id="account-form">
+        <input type="hidden" id="acc-id">
+        <div class="form-group">
+          <label for="acc-username">Pseudo Minecraft</label>
+          <input type="text" id="acc-username" required placeholder="Ex : ItzRealMe">
+        </div>
+        <div class="form-group">
+          <label for="acc-price">Prix (€)</label>
+          <input type="number" id="acc-price" step="0.01" min="0" required placeholder="0 pour gratuit">
+        </div>
+        <div class="form-group">
+          <label for="acc-email">Email du compte (livré après achat)</label>
+          <input type="email" id="acc-email" required placeholder="compte@mail.com">
+        </div>
+        <div class="form-group">
+          <label for="acc-password">Mot de passe du compte (livré après achat)</label>
+          <input type="text" id="acc-password" required placeholder="MotDePasse123">
+        </div>
+        <div class="form-group">
+          <label for="acc-description">Description</label>
+          <textarea id="acc-description" rows="3" placeholder="Détails du compte..."></textarea>
+        </div>
+        <div class="form-group">
+          <label>Tiers (saisis à la main)</label>
+          <div class="tier-editor">
+            <input type="text" id="tier-mode" placeholder="Mode (ex : Crystal)" class="tier-mode-input">
+            <select id="tier-value" class="tier-value-select"></select>
+            <button type="button" id="tier-add-btn" class="btn btn-outline btn-sm">Ajouter</button>
+          </div>
+          <div id="tier-list" class="tier-list"></div>
+        </div>
+        <div class="form-group">
+          <label class="checkbox-row">
+            <input type="checkbox" id="acc-certified" checked> Compte certifié
+          </label>
+        </div>
+        <div class="form-group">
+          <label class="checkbox-row">
+            <input type="checkbox" id="acc-sold"> Marquer comme vendu
+          </label>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width:100%">Sauvegarder</button>
+      </form>
+    </div>
+  </div>
+
+  <script type="module" src="../js/admin.js?v=18"></script>
+</body>
+</html>

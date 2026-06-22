@@ -1,0 +1,49 @@
+{
+  "settings": {
+    "siteName": "Nexus Market",
+    "paypalEmail": "NexusMarket1733",
+    "paypalMe": "NexusMarket1733",
+    "paypalClientId": "AZiTIxB8vNgL9pxrwrs9FaeURfrhE5FJGKCscmu2ZniZDGaC6-NjsrlDTl2ySu0TTxxYU37OZqJqZdQW",
+    "currency": "EUR",
+    "adminPassword": "NovaShop1733"
+  },
+  "accounts": [
+    {
+      "id": "acc-demo-1",
+      "username": "ItzRealMe",
+      "price": 49.99,
+      "certified": true,
+      "description": "Compte PvP premium avec excellents tiers Crystal et SMP.",
+      "sold": false,
+      "email": "demo@example.com",
+      "password": "DemoPassword123!"
+    },
+    {
+      "id": "acc-demo-2",
+      "username": "Dream",
+      "price": 29.99,
+      "certified": true,
+      "description": "Compte certifie avec skin personnalise.",
+      "sold": false,
+      "email": "dream@example.com",
+      "password": "DreamPass456!"
+    },
+    {
+      "id": "acc-ddeb2668",
+      "username": "coldified",
+      "price": 0,
+      "email": "feur@gmail.com",
+      "password": "azeaze",
+      "description": "top 3 player",
+      "certified": true,
+      "sold": false,
+      "tiers": []
+    }
+  ],
+  "orders": [],
+  "sessions": {
+    "aee4a0d46d0d1297b29a2f5f1a64c10a2d9513962ce2bf8cb87c2d232cf64613": {
+      "loginAt": 1781822900033
+    }
+  }
+}
