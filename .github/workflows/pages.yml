@@ -3,6 +3,14 @@ name: Deploy site web
 on:
   push:
     branches: [main]
+    paths:
+      - '**.html'
+      - 'css/**'
+      - 'js/**'
+      - 'admin/**'
+      - 'data/**'
+      - 'scripts/**'
+      - '.github/workflows/pages.yml'
   workflow_dispatch:
 
 permissions:

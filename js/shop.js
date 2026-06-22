@@ -1,11 +1,13 @@
-import { getAccounts } from './api.js?v=16';
-import { fetchPlayerTiers, getSkinUrl, getTierClass, startTierRefresh, tierValueClass, bestManualTier } from './tiers.js?v=16';
+import { getAccounts } from './api.js?v=17';
+import { fetchPlayerTiers, getSkinUrl, getTierClass, startTierRefresh, tierValueClass, bestManualTier } from './tiers.js?v=17';
 
 const carousel = document.getElementById('carousel');
 const loading = document.getElementById('loading');
 const shopContent = document.getElementById('shop-content');
 const emptyState = document.getElementById('empty-state');
 const refreshIntervals = [];
+let accountsFingerprint = '';
+let refreshTimer = null;
 
 function renderTiersBadges(rankings, limit = 4) {
   if (!rankings?.length) return '<span class="tier-badge">Aucun tier</span>';
@@ -22,6 +24,10 @@ function renderManualBadges(tiers, limit = 4) {
 
 function hasManualTiers(account) {
   return Array.isArray(account.tiers) && account.tiers.length > 0;
+}
+
+function accountsKey(accounts) {
+  return accounts.map(a => `${a.id}:${a.price}:${a.sold}:${a.username}`).join('|');
 }
 
 function createCard(account, tierData) {
@@ -52,7 +58,6 @@ function createCard(account, tierData) {
 }
 
 async function loadTiersForCard(card, account) {
-  // Tiers saisis à la main → priorité, pas d'appel API.
   if (hasManualTiers(account)) return;
 
   const username = account.username;
@@ -69,23 +74,48 @@ async function loadTiersForCard(card, account) {
   refreshIntervals.push(interval);
 }
 
+function clearCarousel() {
+  refreshIntervals.forEach(clearInterval);
+  refreshIntervals.length = 0;
+  carousel.innerHTML = '';
+}
+
+async function renderShop(accounts, { silent = false } = {}) {
+  const fp = accountsKey(accounts);
+  if (fp === accountsFingerprint && silent) return;
+  accountsFingerprint = fp;
+
+  clearCarousel();
+
+  if (!accounts.length) {
+    shopContent.classList.add('hidden');
+    emptyState.classList.remove('hidden');
+    return;
+  }
+
+  emptyState.classList.add('hidden');
+  shopContent.classList.remove('hidden');
+
+  for (const account of accounts) {
+    const card = createCard(account, null);
+    carousel.appendChild(card);
+    loadTiersForCard(card, account);
+  }
+}
+
+async function loadAccounts({ silent = false } = {}) {
+  const accounts = await getAccounts();
+  if (!silent) loading.classList.add('hidden');
+  await renderShop(accounts, { silent });
+}
+
 async function init() {
   try {
-    const accounts = await getAccounts();
-    loading.classList.add('hidden');
-
-    if (!accounts.length) {
-      emptyState.classList.remove('hidden');
-      return;
-    }
-
-    shopContent.classList.remove('hidden');
-
-    for (const account of accounts) {
-      const card = createCard(account, null);
-      carousel.appendChild(card);
-      loadTiersForCard(card, account);
-    }
+    await loadAccounts();
+    refreshTimer = setInterval(() => loadAccounts({ silent: true }), 30000);
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') loadAccounts({ silent: true });
+    });
   } catch (err) {
     loading.innerHTML = `<p style="color:#ff4757">Erreur: ${err.message}</p>`;
   }

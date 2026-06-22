@@ -1,6 +1,6 @@
-import { getAccount, createPayPalOrder, confirmPayment } from './api.js?v=16';
-import { PAYPAL_ME, PAYPAL_CLIENT_ID } from './config.js?v=16';
-import { fetchPlayerTiers, getSkinUrl, startTierRefresh, tierValueClass, bestManualTier } from './tiers.js?v=16';
+import { getAccount, createPayPalOrder, confirmPayment } from './api.js?v=17';
+import { PAYPAL_ME, PAYPAL_CLIENT_ID } from './config.js?v=17';
+import { fetchPlayerTiers, getSkinUrl, startTierRefresh, tierValueClass, bestManualTier } from './tiers.js?v=17';
 
 const params = new URLSearchParams(window.location.search);
 const accountId = params.get('id');

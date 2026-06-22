@@ -1,0 +1,31 @@
+name: Publish catalog
+
+on:
+  workflow_dispatch:
+    inputs:
+      store_json:
+        description: 'Store JSON (base64)'
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Écrire le catalogue
+        run: |
+          echo "${{ inputs.store_json }}" | base64 -d > data/store.json
+          node scripts/sync-catalog.js
+
+      - name: Commit et push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/store.json data/accounts-public.json
+          git diff --staged --quiet && echo "Aucun changement" && exit 0
+          git commit -m "Mise à jour catalogue Nexus Market (admin)"
+          git push

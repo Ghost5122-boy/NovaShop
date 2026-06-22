@@ -11,8 +11,8 @@ import {
   GITHUB_REPO,
   GITHUB_BRANCH,
   SITE_NAME
-} from './config.js?v=16';
-import { normalizeSiteName } from './branding.js?v=16';
+} from './config.js?v=17';
+import { normalizeSiteName } from './branding.js?v=17';
 
 const STORE_KEY = 'nova_store_v2';
 const TOKEN_KEY = 'nova_admin_token';
@@ -152,34 +152,82 @@ async function apiFetch(path, opts = {}) {
   return res.json();
 }
 
+async function fetchGitHubRawFile(path) {
+  const url = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${path}?ref=${GITHUB_BRANCH}`;
+  const res = await fetch(url, {
+    headers: { Accept: 'application/vnd.github.raw' },
+    cache: 'no-store'
+  });
+  if (!res.ok) throw new Error(`GitHub API ${res.status}`);
+  const text = await res.text();
+  return JSON.parse(text.replace(/^\uFEFF/, ''));
+}
+
+async function fetchRemoteStore() {
+  invalidateStaticCache();
+  const ts = Date.now();
+
+  if (!isGitHubPages() && !isLocalServer()) {
+    try {
+      return await fetchStaticStore(true);
+    } catch { /* continue */ }
+  }
+
+  try {
+    return await fetchGitHubRawFile('data/store.json');
+  } catch { /* continue */ }
+
+  try {
+    const url = `https://cdn.jsdelivr.net/gh/${GITHUB_OWNER}/${GITHUB_REPO}@${GITHUB_BRANCH}/data/store.json?_=${ts}`;
+    const res = await fetch(url, { cache: 'no-store' });
+    if (res.ok) return res.json();
+  } catch { /* continue */ }
+
+  try {
+    return await fetchStaticStore(true);
+  } catch { /* continue */ }
+
+  const data = await fetch(dataUrl('accounts-public.json') + `?_=${ts}`, { cache: 'no-store' });
+  if (!data.ok) throw new Error('Catalogue indisponible');
+  const json = await data.json();
+  return { accounts: json.accounts || [], settings: {} };
+}
+
 async function fetchStaticCatalog(bust = false) {
   if (staticCatalog && !bust) return staticCatalog;
-  const q = bust ? `?t=${Date.now()}` : '';
-  const res = await fetch(dataUrl('accounts-public.json') + q, { cache: 'no-store' });
-  if (!res.ok) throw new Error('Catalogue indisponible');
-  const data = await res.json();
-  staticCatalog = data.accounts || [];
-  return staticCatalog;
+  try {
+    const store = await fetchRemoteStore();
+    staticCatalog = (store.accounts || []).map(publicAccount);
+    staticStore = store;
+    return staticCatalog;
+  } catch {
+    const q = bust ? `?t=${Date.now()}` : '';
+    const res = await fetch(dataUrl('accounts-public.json') + q, { cache: 'no-store' });
+    if (!res.ok) throw new Error('Catalogue indisponible');
+    const data = await res.json();
+    staticCatalog = data.accounts || [];
+    return staticCatalog;
+  }
 }
 
 async function fetchStaticStore(bust = false) {
   if (staticStore && !bust) return staticStore;
-  const q = bust ? `?t=${Date.now()}` : '';
-  const res = await fetch(dataUrl('store.json') + q, { cache: 'no-store' });
-  if (!res.ok) throw new Error('Données boutique indisponibles');
-  staticStore = await res.json();
+  staticStore = await fetchRemoteStore();
+  staticCatalog = (staticStore.accounts || []).map(publicAccount);
   return staticStore;
 }
 
-/** Comptes déployés sur GitHub Pages (visible par tous les visiteurs). */
+/** Comptes déployés sur GitHub (visible par tous les visiteurs). */
 async function getDeployedAccounts(includeSold = true) {
   invalidateStaticCache();
   let list = [];
   try {
-    const s = await fetchStaticStore(true);
+    const s = await fetchRemoteStore();
     list = s.accounts || [];
   } catch {
-    list = await fetchStaticCatalog(true);
+    try {
+      list = await fetchStaticCatalog(true);
+    } catch { /* ignore */ }
   }
   if (!includeSold) list = list.filter(a => !a.sold);
   return list;
@@ -219,24 +267,66 @@ async function githubPutFile(token, path, content, message) {
   return res.json();
 }
 
-/** Publie le catalogue sur GitHub → visible par tous après ~2 min. */
+async function publishViaWorkflow(token, storeJson) {
+  const res = await fetch(
+    `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/actions/workflows/publish-catalog.yml/dispatches`,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/vnd.github+json',
+        'Content-Type': 'application/json',
+        'X-GitHub-Api-Version': '2022-11-28'
+      },
+      body: JSON.stringify({
+        ref: GITHUB_BRANCH,
+        inputs: { store_json: toBase64Utf8(storeJson) }
+      })
+    }
+  );
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || `Workflow GitHub (${res.status})`);
+  }
+}
+
+export async function validateGithubToken(token) {
+  const res = await fetch('https://api.github.com/user', {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      Accept: 'application/vnd.github+json'
+    }
+  });
+  if (!res.ok) throw new Error('Token GitHub invalide ou expiré');
+  return res.json();
+}
+
+/** Publie le catalogue sur GitHub → visible par tous en ~1 min. */
 export async function publishCatalog() {
   ensureAdmin();
   const local = loadStore();
   const token = local.settings.githubToken?.trim();
   if (!token) {
-    throw new Error('Ajoute un token GitHub dans Réglages (section « Publier pour tous »).');
+    throw new Error('Ajoute un token GitHub dans Réglages → section « Publier pour tous ».');
   }
+
+  await validateGithubToken(token);
 
   const accounts = await getMergedAccounts(true);
   const settings = { ...local.settings };
   delete settings.githubToken;
 
-  const storeJson = JSON.stringify({ settings, accounts, orders: [] }, null, 2) + '\n';
+  const storeObj = { settings, accounts, orders: local.orders || [] };
+  const storeJson = JSON.stringify(storeObj, null, 2) + '\n';
   const publicJson = JSON.stringify({ accounts: accounts.map(publicAccount) }, null, 2) + '\n';
 
-  await githubPutFile(token, 'data/store.json', storeJson, 'Mise à jour catalogue Nexus Market');
-  await githubPutFile(token, 'data/accounts-public.json', publicJson, 'Mise à jour catalogue public Nexus Market');
+  try {
+    await publishViaWorkflow(token, storeJson);
+  } catch {
+    await githubPutFile(token, 'data/store.json', storeJson, 'Mise à jour catalogue Nexus Market');
+    await githubPutFile(token, 'data/accounts-public.json', publicJson, 'Mise à jour catalogue public Nexus Market');
+  }
+
   invalidateStaticCache();
   return { success: true };
 }
@@ -362,7 +452,8 @@ export async function getAccounts() {
       return await apiFetch('/api/accounts');
     } catch { /* fallback */ }
   }
-  if (isGitHubPages()) {
+  invalidateStaticCache();
+  if (isGitHubPages() || !isLocalServer()) {
     return (await getDeployedAccounts(false)).map(publicAccount);
   }
   const accounts = await getMergedAccounts(false);
@@ -375,7 +466,7 @@ export async function getAccount(id) {
       return await apiFetch(`/api/accounts/${encodeURIComponent(id)}`);
     } catch { /* fallback */ }
   }
-  if (isGitHubPages()) {
+  if (isGitHubPages() || !isLocalServer()) {
     const acc = (await getDeployedAccounts(true)).find(a => a.id === id);
     if (!acc) throw new Error('Compte introuvable');
     return publicAccount(acc);
@@ -394,7 +485,7 @@ export async function getCredentials(id, orderToken) {
   const paid = (proof && proof.token === orderToken) || !!localOrder;
   if (!paid) throw new Error('Paiement non confirmé');
 
-  const acc = isGitHubPages()
+  const acc = isGitHubPages() || !isLocalServer()
     ? (await getDeployedAccounts(true)).find(a => a.id === id)
     : await findFullAccount(id);
   if (!acc?.email) throw new Error('Identifiants indisponibles. Contacte le vendeur.');

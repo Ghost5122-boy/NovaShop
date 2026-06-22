@@ -1,10 +1,10 @@
 import {
   adminLogin, getAdminToken, setAdminToken,
   adminGetStore, adminSaveAccount, adminDeleteAccount, adminSaveSettings,
-  exportStore, importStore, publishCatalog
-} from './api.js?v=16';
-import { TIER_VALUES, tierValueClass } from './tiers.js?v=16';
-import { applySiteBranding } from './branding.js?v=16';
+  exportStore, importStore, publishCatalog, validateGithubToken
+} from './api.js?v=17';
+import { TIER_VALUES, tierValueClass } from './tiers.js?v=17';
+import { applySiteBranding } from './branding.js?v=17';
 
 applySiteBranding('Nexus Market', { admin: true });
 
@@ -23,6 +23,30 @@ function showAdmin() {
   loginView.classList.add('hidden');
   adminView.classList.remove('hidden');
   loadStore();
+  updatePublishBanner();
+}
+
+function updatePublishBanner() {
+  let banner = document.getElementById('publish-banner');
+  if (!banner) {
+    banner = document.createElement('div');
+    banner.id = 'publish-banner';
+    banner.style.cssText = 'margin:0 0 1rem;padding:0.85rem 1rem;border-radius:8px;font-size:0.88rem;line-height:1.45';
+    const panel = document.querySelector('.admin-panel');
+    panel?.insertBefore(banner, panel.firstChild);
+  }
+  const hasToken = !!store?.settings?.githubToken?.trim();
+  if (hasToken) {
+    banner.style.background = '#ecfdf5';
+    banner.style.color = '#065f46';
+    banner.style.border = '1px solid #6ee7b7';
+    banner.innerHTML = '✅ <strong>Sync activée</strong> — chaque sauvegarde publie le catalogue pour tous les visiteurs (~1 min).';
+  } else {
+    banner.style.background = '#fff7ed';
+    banner.style.color = '#9a3412';
+    banner.style.border = '1px solid #fdba74';
+    banner.innerHTML = '⚠️ <strong>Sync désactivée</strong> — seul toi vois les nouveaux comptes. Va dans <strong>Réglages</strong> → colle ton <strong>token GitHub</strong> → Sauvegarder.';
+  }
 }
 
 function showLogin() {
@@ -104,13 +128,15 @@ function fillSettings() {
 
 async function tryPublishCatalog(actionLabel = 'Sauvegarde') {
   if (!store?.settings?.githubToken?.trim()) {
-    return `${actionLabel} locale OK. Pour que tout le monde voie les changements : Réglages → colle ton token GitHub → « Publier pour tous ».`;
+    updatePublishBanner();
+    return `${actionLabel} enregistrée sur ton navigateur seulement.\n\nPour que TOUT LE MONDE voie les comptes :\nRéglages → Token GitHub → Sauvegarder → « Publier pour tous ».`;
   }
   try {
     await publishCatalog();
-    return `${actionLabel} publiée ! Visible par tous dans ~2 minutes sur la boutique.`;
+    updatePublishBanner();
+    return `✅ ${actionLabel} publiée ! Visible par tous dans ~1 minute.`;
   } catch (e) {
-    return `${actionLabel} locale OK, mais publication échouée : ${e.message}`;
+    return `${actionLabel} locale OK, mais publication échouée :\n${e.message}`;
   }
 }
 
@@ -223,12 +249,21 @@ document.getElementById('account-form').addEventListener('submit', async (e) => 
 document.getElementById('settings-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   const pass = document.getElementById('admin-pass').value.trim();
+  const ghToken = document.getElementById('github-token').value.trim();
+  if (ghToken) {
+    try {
+      await validateGithubToken(ghToken);
+    } catch (err) {
+      alert('Token GitHub invalide : ' + err.message);
+      return;
+    }
+  }
   await adminSaveSettings({
     paypalEmail: document.getElementById('paypal-email').value.trim(),
     paypalMe: document.getElementById('paypal-email').value.trim(),
     paypalClientId: document.getElementById('paypal-client').value.trim(),
     siteName: document.getElementById('site-name').value.trim(),
-    githubToken: document.getElementById('github-token').value.trim(),
+    githubToken: ghToken,
     ...(pass ? { adminPassword: pass } : {})
   });
   await loadStore();

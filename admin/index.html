@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin — Nexus Market</title>
-  <script src="../js/branding-inline.js?v=16"></script>
+  <script src="../js/branding-inline.js?v=17"></script>
   <link rel="stylesheet" href="../css/style.css">
 </head>
 <body>
@@ -121,25 +121,25 @@
           </div>
 
           <div class="login-card" style="margin:0">
-            <h2 style="margin-bottom:0.75rem;color:var(--blue-800)">Publier pour tous les visiteurs</h2>
+            <h2 style="margin-bottom:0.75rem;color:var(--blue-800)">Synchronisation boutique</h2>
             <p style="font-size:0.86rem;color:var(--text-muted);margin-bottom:1rem;line-height:1.5">
-              Pour que <strong>tout le monde</strong> voie tes nouveaux comptes et prix, publie le catalogue sur GitHub.
-              Une fois le token configuré, chaque sauvegarde publie automatiquement.
+              <strong>Obligatoire</strong> pour que les visiteurs voient tes comptes.
+              Configure le token une seule fois — chaque ajout/modif publie automatiquement.
             </p>
             <div class="form-group">
-              <label for="github-token">Token GitHub (une seule fois)</label>
+              <label for="github-token">Token GitHub</label>
               <input type="password" id="github-token" placeholder="ghp_... ou github_pat_...">
               <p style="font-size:0.78rem;color:var(--text-muted);margin-top:0.35rem;line-height:1.45">
-                1. Va sur <a href="https://github.com/settings/tokens" target="_blank" rel="noopener">github.com/settings/tokens</a><br>
-                2. <strong>Generate new token</strong> → coche <strong>Contents: Read and write</strong><br>
-                3. Colle le token ici puis <strong>Sauvegarder</strong> (Réglages PayPal & site)
+                1. <a href="https://github.com/settings/tokens" target="_blank" rel="noopener">github.com/settings/tokens</a> → <strong>Generate new token (classic)</strong><br>
+                2. Coche : <strong>repo</strong> (ou Contents + Actions en écriture)<br>
+                3. Colle le token → onglet Réglages → <strong>Sauvegarder</strong>
               </p>
             </div>
             <button type="button" class="btn btn-primary" id="publish-btn" style="width:100%;margin-bottom:0.75rem">
-              Publier pour tous les visiteurs
+              Publier maintenant pour tous
             </button>
             <p style="font-size:0.78rem;color:var(--text-muted);text-align:center">
-              Déploiement ~2 min après publication
+              Visible par tous en ~1 minute sur la boutique
             </p>
           </div>
 
@@ -211,6 +211,6 @@
     </div>
   </div>
 
-  <script type="module" src="../js/admin.js?v=16"></script>
+  <script type="module" src="../js/admin.js?v=17"></script>
 </body>
 </html>
