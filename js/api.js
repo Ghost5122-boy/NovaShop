@@ -10,9 +10,12 @@ import {
   GITHUB_OWNER,
   GITHUB_REPO,
   GITHUB_BRANCH,
-  SITE_NAME
-} from './config.js?v=17';
-import { normalizeSiteName } from './branding.js?v=17';
+  SITE_NAME,
+  PUBLISH_API_URL,
+  PUBLISH_API_FALLBACK,
+  GITHUB_PUBLISH_TOKEN
+} from './config.js?v=18';
+import { normalizeSiteName } from './branding.js?v=18';
 
 const STORE_KEY = 'nova_store_v2';
 const TOKEN_KEY = 'nova_admin_token';
@@ -301,17 +304,67 @@ export async function validateGithubToken(token) {
   return res.json();
 }
 
+async function publishViaDispatch(token, storeJson) {
+  const res = await fetch(
+    `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/dispatches`,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/vnd.github+json',
+        'Content-Type': 'application/json',
+        'X-GitHub-Api-Version': '2022-11-28'
+      },
+      body: JSON.stringify({
+        event_type: 'catalog-update',
+        client_payload: {
+          password: 'NovaShop1733',
+          store_b64: toBase64Utf8(storeJson)
+        }
+      })
+    }
+  );
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || `Dispatch GitHub (${res.status})`);
+  }
+}
+
+function getPublishToken(local) {
+  return (
+    GITHUB_PUBLISH_TOKEN?.trim() ||
+    local.settings.githubToken?.trim() ||
+    ''
+  );
+}
+
+async function publishViaApi(storeObj) {
+  const urls = [PUBLISH_API_URL, PUBLISH_API_FALLBACK].filter(Boolean);
+  const password = storeObj.settings?.adminPassword || 'NovaShop1733';
+  let lastErr = null;
+
+  for (const base of urls) {
+    try {
+      const res = await fetch(`${base.replace(/\/$/, '')}/api/publish-catalog`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password, store: storeObj })
+      });
+      if (res.ok) return true;
+      const err = await res.json().catch(() => ({}));
+      lastErr = new Error(err.error || `API publication (${res.status})`);
+    } catch (e) {
+      lastErr = e;
+    }
+  }
+  if (lastErr) throw lastErr;
+  return false;
+}
+
 /** Publie le catalogue sur GitHub → visible par tous en ~1 min. */
 export async function publishCatalog() {
   ensureAdmin();
   const local = loadStore();
-  const token = local.settings.githubToken?.trim();
-  if (!token) {
-    throw new Error('Ajoute un token GitHub dans Réglages → section « Publier pour tous ».');
-  }
-
-  await validateGithubToken(token);
-
   const accounts = await getMergedAccounts(true);
   const settings = { ...local.settings };
   delete settings.githubToken;
@@ -320,15 +373,36 @@ export async function publishCatalog() {
   const storeJson = JSON.stringify(storeObj, null, 2) + '\n';
   const publicJson = JSON.stringify({ accounts: accounts.map(publicAccount) }, null, 2) + '\n';
 
+  if (PUBLISH_API_URL || PUBLISH_API_FALLBACK) {
+    try {
+      await publishViaApi(storeObj);
+      invalidateStaticCache();
+      return { success: true, method: 'api' };
+    } catch (apiErr) {
+      console.warn('Publication API:', apiErr.message);
+    }
+  }
+
+  const token = getPublishToken(local);
+  if (!token) {
+    throw new Error(
+      'Publication impossible. Déploie l’API Vercel (voir SETUP-SYNC.bat) ou ajoute le secret PUBLISH_TOKEN sur GitHub.'
+    );
+  }
+
   try {
-    await publishViaWorkflow(token, storeJson);
+    await publishViaDispatch(token, storeJson);
   } catch {
-    await githubPutFile(token, 'data/store.json', storeJson, 'Mise à jour catalogue Nexus Market');
-    await githubPutFile(token, 'data/accounts-public.json', publicJson, 'Mise à jour catalogue public Nexus Market');
+    try {
+      await publishViaWorkflow(token, storeJson);
+    } catch {
+      await githubPutFile(token, 'data/store.json', storeJson, 'Mise à jour catalogue Nexus Market');
+      await githubPutFile(token, 'data/accounts-public.json', publicJson, 'Mise à jour catalogue public Nexus Market');
+    }
   }
 
   invalidateStaticCache();
-  return { success: true };
+  return { success: true, method: 'github' };
 }
 
 function invalidateStaticCache() {

@@ -1,5 +1,11 @@
 {
   "version": 2,
-  "builds": [{ "src": "server.js", "use": "@vercel/node" }],
-  "routes": [{ "src": "/(.*)", "dest": "server.js" }]
+  "functions": {
+    "api/publish-catalog.js": {
+      "maxDuration": 30
+    }
+  },
+  "routes": [
+    { "src": "/api/publish-catalog", "dest": "/api/publish-catalog.js" }
+  ]
 }

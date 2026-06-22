@@ -1,5 +1,5 @@
-import { getAccounts } from './api.js?v=17';
-import { fetchPlayerTiers, getSkinUrl, getTierClass, startTierRefresh, tierValueClass, bestManualTier } from './tiers.js?v=17';
+import { getAccounts } from './api.js?v=18';
+import { fetchPlayerTiers, getSkinUrl, getTierClass, startTierRefresh, tierValueClass, bestManualTier } from './tiers.js?v=18';
 
 const carousel = document.getElementById('carousel');
 const loading = document.getElementById('loading');

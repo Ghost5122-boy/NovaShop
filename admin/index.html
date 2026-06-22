@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin — Nexus Market</title>
-  <script src="../js/branding-inline.js?v=17"></script>
+  <script src="../js/branding-inline.js?v=18"></script>
   <link rel="stylesheet" href="../css/style.css">
 </head>
 <body>
@@ -121,26 +121,14 @@
           </div>
 
           <div class="login-card" style="margin:0">
-            <h2 style="margin-bottom:0.75rem;color:var(--blue-800)">Synchronisation boutique</h2>
+            <h2 style="margin-bottom:0.75rem;color:var(--blue-800)">Synchronisation</h2>
             <p style="font-size:0.86rem;color:var(--text-muted);margin-bottom:1rem;line-height:1.5">
-              <strong>Obligatoire</strong> pour que les visiteurs voient tes comptes.
-              Configure le token une seule fois — chaque ajout/modif publie automatiquement.
+              Le catalogue se publie <strong>automatiquement</strong> à chaque sauvegarde.
+              Visible par tous en ~1 minute.
             </p>
-            <div class="form-group">
-              <label for="github-token">Token GitHub</label>
-              <input type="password" id="github-token" placeholder="ghp_... ou github_pat_...">
-              <p style="font-size:0.78rem;color:var(--text-muted);margin-top:0.35rem;line-height:1.45">
-                1. <a href="https://github.com/settings/tokens" target="_blank" rel="noopener">github.com/settings/tokens</a> → <strong>Generate new token (classic)</strong><br>
-                2. Coche : <strong>repo</strong> (ou Contents + Actions en écriture)<br>
-                3. Colle le token → onglet Réglages → <strong>Sauvegarder</strong>
-              </p>
-            </div>
             <button type="button" class="btn btn-primary" id="publish-btn" style="width:100%;margin-bottom:0.75rem">
               Publier maintenant pour tous
             </button>
-            <p style="font-size:0.78rem;color:var(--text-muted);text-align:center">
-              Visible par tous en ~1 minute sur la boutique
-            </p>
           </div>
 
           <div class="login-card" style="margin:0">
@@ -211,6 +199,6 @@
     </div>
   </div>
 
-  <script type="module" src="../js/admin.js?v=17"></script>
+  <script type="module" src="../js/admin.js?v=18"></script>
 </body>
 </html>

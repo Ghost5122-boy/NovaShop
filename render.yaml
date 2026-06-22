@@ -13,7 +13,9 @@ services:
         value: true
       - key: ADMIN_PASSWORD
         sync: false
-        value: NovaShop1986*
+        value: NovaShop1733
+      - key: GITHUB_PAT
+        sync: false
 
   - type: web
     name: nova-shop-admin
@@ -29,4 +31,6 @@ services:
         value: true
       - key: ADMIN_PASSWORD
         sync: false
-        value: NovaShop1986*
+        value: NovaShop1733
+      - key: GITHUB_PAT
+        sync: false

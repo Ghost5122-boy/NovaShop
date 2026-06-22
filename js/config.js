@@ -18,6 +18,13 @@ export const GITHUB_BRANCH = 'main';
  */
 export const BACKEND_URL = '';
 
+/** Token GitHub injecté au build (secret PUBLISH_TOKEN) — sync auto. */
+export const GITHUB_PUBLISH_TOKEN = '';
+
+/** API de publication — sync auto (Vercel ou Render). */
+export const PUBLISH_API_URL = 'https://nova-minecraft-shop.vercel.app';
+export const PUBLISH_API_FALLBACK = 'https://nova-shop.onrender.com';
+
 /** Lien PayPal.me (secours si le SDK PayPal ne charge pas) */
 export const PAYPAL_ME = 'NexusMarket1733';
 

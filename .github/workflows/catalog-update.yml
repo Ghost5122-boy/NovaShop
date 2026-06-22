@@ -1,0 +1,29 @@
+name: Catalog update (admin)
+
+on:
+  repository_dispatch:
+    types: [catalog-update]
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    if: github.event.client_payload.password == 'NovaShop1733'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Écrire le catalogue
+        run: |
+          echo "${{ github.event.client_payload.store_b64 }}" | base64 -d > data/store.json
+          node scripts/sync-catalog.js
+
+      - name: Commit et push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/store.json data/accounts-public.json
+          git diff --staged --quiet && echo "Aucun changement" && exit 0
+          git commit -m "Catalogue Nexus Market (sync admin)"
+          git push

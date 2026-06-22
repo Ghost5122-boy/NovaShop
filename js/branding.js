@@ -1,4 +1,4 @@
-import { SITE_NAME } from './config.js?v=17';
+import { SITE_NAME } from './config.js?v=18';
 
 export function normalizeSiteName(name) {
   const n = String(name || SITE_NAME).trim();

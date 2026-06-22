@@ -1,10 +1,10 @@
 import {
   adminLogin, getAdminToken, setAdminToken,
   adminGetStore, adminSaveAccount, adminDeleteAccount, adminSaveSettings,
-  exportStore, importStore, publishCatalog, validateGithubToken
-} from './api.js?v=17';
-import { TIER_VALUES, tierValueClass } from './tiers.js?v=17';
-import { applySiteBranding } from './branding.js?v=17';
+  exportStore, importStore, publishCatalog
+} from './api.js?v=18';
+import { TIER_VALUES, tierValueClass } from './tiers.js?v=18';
+import { applySiteBranding } from './branding.js?v=18';
 
 applySiteBranding('Nexus Market', { admin: true });
 
@@ -35,17 +35,18 @@ function updatePublishBanner() {
     const panel = document.querySelector('.admin-panel');
     panel?.insertBefore(banner, panel.firstChild);
   }
-  const hasToken = !!store?.settings?.githubToken?.trim();
-  if (hasToken) {
-    banner.style.background = '#ecfdf5';
-    banner.style.color = '#065f46';
-    banner.style.border = '1px solid #6ee7b7';
-    banner.innerHTML = '✅ <strong>Sync activée</strong> — chaque sauvegarde publie le catalogue pour tous les visiteurs (~1 min).';
-  } else {
-    banner.style.background = '#fff7ed';
-    banner.style.color = '#9a3412';
-    banner.style.border = '1px solid #fdba74';
-    banner.innerHTML = '⚠️ <strong>Sync désactivée</strong> — seul toi vois les nouveaux comptes. Va dans <strong>Réglages</strong> → colle ton <strong>token GitHub</strong> → Sauvegarder.';
+  banner.style.background = '#ecfdf5';
+  banner.style.color = '#065f46';
+  banner.style.border = '1px solid #6ee7b7';
+  banner.innerHTML = '✅ <strong>Sync automatique</strong> — chaque sauvegarde publie le catalogue pour tous les visiteurs (~1 min).';
+}
+
+async function tryPublishCatalog(actionLabel = 'Sauvegarde') {
+  try {
+    await publishCatalog();
+    return `✅ ${actionLabel} publiée ! Visible par tous dans ~1 minute.`;
+  } catch (e) {
+    return `⚠️ ${actionLabel} locale OK.\nPublication : ${e.message}`;
   }
 }
 
@@ -120,24 +121,9 @@ function fillSettings() {
   document.getElementById('paypal-client').value = store.settings.paypalClientId || '';
   document.getElementById('site-name').value = store.settings.siteName || 'Nexus Market';
   document.getElementById('admin-pass').value = store.settings.adminPassword || '';
-  document.getElementById('github-token').value = store.settings.githubToken || '';
   const preview = document.getElementById('paypal-preview');
   if (preview) preview.textContent = me;
   applySiteBranding(store.settings.siteName, { admin: true });
-}
-
-async function tryPublishCatalog(actionLabel = 'Sauvegarde') {
-  if (!store?.settings?.githubToken?.trim()) {
-    updatePublishBanner();
-    return `${actionLabel} enregistrée sur ton navigateur seulement.\n\nPour que TOUT LE MONDE voie les comptes :\nRéglages → Token GitHub → Sauvegarder → « Publier pour tous ».`;
-  }
-  try {
-    await publishCatalog();
-    updatePublishBanner();
-    return `✅ ${actionLabel} publiée ! Visible par tous dans ~1 minute.`;
-  } catch (e) {
-    return `${actionLabel} locale OK, mais publication échouée :\n${e.message}`;
-  }
 }
 
 function renderTierList() {
@@ -249,21 +235,11 @@ document.getElementById('account-form').addEventListener('submit', async (e) => 
 document.getElementById('settings-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   const pass = document.getElementById('admin-pass').value.trim();
-  const ghToken = document.getElementById('github-token').value.trim();
-  if (ghToken) {
-    try {
-      await validateGithubToken(ghToken);
-    } catch (err) {
-      alert('Token GitHub invalide : ' + err.message);
-      return;
-    }
-  }
   await adminSaveSettings({
     paypalEmail: document.getElementById('paypal-email').value.trim(),
     paypalMe: document.getElementById('paypal-email').value.trim(),
     paypalClientId: document.getElementById('paypal-client').value.trim(),
     siteName: document.getElementById('site-name').value.trim(),
-    githubToken: ghToken,
     ...(pass ? { adminPassword: pass } : {})
   });
   await loadStore();
@@ -274,20 +250,15 @@ document.getElementById('paypal-email').addEventListener('input', (e) => {
   document.getElementById('paypal-preview').textContent = e.target.value || 'NexusMarket1733';
 });
 
-document.getElementById('publish-btn').addEventListener('click', async () => {
+document.getElementById('publish-btn')?.addEventListener('click', async () => {
   const btn = document.getElementById('publish-btn');
-  const token = document.getElementById('github-token').value.trim();
-  if (token) await adminSaveSettings({ githubToken: token });
   btn.disabled = true;
   btn.textContent = 'Publication…';
   try {
-    await publishCatalog();
-    alert('Catalogue publié ! Visible par tous dans ~2 minutes.');
-  } catch (e) {
-    alert('Erreur : ' + e.message);
+    alert(await tryPublishCatalog('Publication'));
   } finally {
     btn.disabled = false;
-    btn.textContent = 'Publier pour tous les visiteurs';
+    btn.textContent = 'Publier maintenant pour tous';
   }
 });
 
@@ -297,7 +268,7 @@ document.getElementById('export-btn').addEventListener('click', async () => {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = 'nova-shop-catalogue.json';
+  a.download = 'nexus-market-catalogue.json';
   a.click();
   URL.revokeObjectURL(url);
 });
@@ -310,6 +281,7 @@ document.getElementById('import-input').addEventListener('change', async (e) => 
     importStore(JSON.parse(text));
     alert('Catalogue importé !');
     await loadStore();
+    alert(await tryPublishCatalog('Import'));
   } catch (err) {
     alert('Erreur import : ' + err.message);
   }

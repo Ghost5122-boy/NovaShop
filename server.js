@@ -201,6 +201,9 @@ app.put('/api/admin/settings', authMiddleware, (req, res) => {
   res.json(store.settings);
 });
 
+const publishCatalogHandler = require('./api/publish-catalog');
+app.post('/api/publish-catalog', publishCatalogHandler);
+
 if (process.env.VERCEL) {
   module.exports = app;
 } else {
