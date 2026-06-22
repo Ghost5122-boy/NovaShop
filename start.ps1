@@ -101,7 +101,7 @@ Write-Host "  ========================================" -ForegroundColor Green
 Write-Host ""
 Write-Host "  Site:   http://localhost:$Port" -ForegroundColor Cyan
 Write-Host "  Admin:  http://localhost:$Port/admin/" -ForegroundColor Yellow
-Write-Host "  MDP:    NovaShop1986*" -ForegroundColor Yellow
+Write-Host "  MDP:    NovaShop1733" -ForegroundColor Yellow
 Write-Host ""
 Write-Host "  Appuyez sur Ctrl+C pour arreter" -ForegroundColor Gray
 Write-Host ""

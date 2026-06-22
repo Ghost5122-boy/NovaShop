@@ -11,8 +11,8 @@ import {
   GITHUB_REPO,
   GITHUB_BRANCH,
   SITE_NAME
-} from './config.js?v=15';
-import { normalizeSiteName } from './branding.js?v=15';
+} from './config.js?v=16';
+import { normalizeSiteName } from './branding.js?v=16';
 
 const STORE_KEY = 'nova_store_v2';
 const TOKEN_KEY = 'nova_admin_token';
@@ -23,7 +23,7 @@ const DEFAULT_STORE = {
     siteName: 'Nexus Market',
     paypalMe: PAYPAL_ME,
     paypalClientId: PAYPAL_CLIENT_ID,
-    adminPassword: 'NovaShop1986*',
+    adminPassword: 'NovaShop1733',
     currency: 'EUR'
   },
   accounts: [],
@@ -42,7 +42,7 @@ function migratePayPalSettings(store) {
   let dirty = false;
   const s = store.settings;
   const me = String(s.paypalMe || s.paypalEmail || '').trim();
-  if (!me || /nova\s*shop/i.test(me)) {
+  if (!me || /novashop1733/i.test(me)) {
     s.paypalMe = PAYPAL_ME;
     s.paypalEmail = PAYPAL_ME;
     dirty = true;
@@ -52,8 +52,22 @@ function migratePayPalSettings(store) {
     s.paypalClientId = PAYPAL_CLIENT_ID;
     dirty = true;
   }
+  if (s.adminPassword === 'NovaShop1986*') {
+    s.adminPassword = 'NovaShop1733';
+    dirty = true;
+  }
   if (dirty) saveStore(store);
   return store;
+}
+
+async function getAdminPassword() {
+  if (isGitHubPages()) {
+    try {
+      const s = (await fetchStaticStore()).settings;
+      if (s?.adminPassword) return s.adminPassword;
+    } catch { /* fallback local */ }
+  }
+  return loadStore().settings.adminPassword;
 }
 
 function loadStore() {
@@ -479,7 +493,8 @@ export async function adminLogin(password) {
     }
   }
   const store = loadStore();
-  if (password !== store.settings.adminPassword) {
+  const expected = await getAdminPassword();
+  if (password !== expected) {
     throw new Error('Mot de passe incorrect');
   }
   const token = genToken();

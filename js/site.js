@@ -1,6 +1,6 @@
-import { getAdminUrl, SHOP_URL, SITE_NAME } from './config.js?v=15';
-import { getPublicSettings } from './api.js?v=15';
-import { applySiteBranding } from './branding.js?v=15';
+import { getAdminUrl, SHOP_URL, SITE_NAME } from './config.js?v=16';
+import { getPublicSettings } from './api.js?v=16';
+import { applySiteBranding } from './branding.js?v=16';
 
 export function initSiteLinks() {
   const url = getAdminUrl();
